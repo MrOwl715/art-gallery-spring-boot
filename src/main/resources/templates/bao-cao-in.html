@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo - ArtGallery POS</title>
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif, Arial; margin: 0; padding: 25px; color: #000; background-color: #fff; }
+        .report-container { max-width: 800px; margin: auto; }
+        .report-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .report-header h3 { margin: 0; }
+        .report-header h2 { margin: 10px 0; }
+        .report-header p { margin: 2px 0; font-size: 14px; }
+        .report-body table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 20px;}
+        .report-body th, .report-body td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .report-body th { background-color: #f2f2f2; }
+        .text-end { text-align: right; }
+        .report-summary { margin-top: 20px; padding-top: 10px; border-top: 1px solid #000; max-width: 400px; margin-left: auto; }
+        .report-summary div { display: flex; justify-content: space-between; padding: 5px 0; font-size: 16px; }
+        .report-footer { margin-top: 50px; display: flex; justify-content: space-around; text-align: center; font-size: 14px; }
+        @media print { 
+            body { -webkit-print-color-adjust: exact; padding: 10px; font-size: 12px;} 
+            .report-body th, .report-body td {padding: 5px;}
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="report-container">
+        <div class="report-header">
+            <h3>ArtGallery POS</h3>
+            <h2 id="report-title"></h2>
+            <p>Thời gian: <span id="report-date-range"></span></p>
+        </div>
+        <div class="report-body">
+            <table id="report-table">
+                <thead id="report-table-head">
+                    </thead>
+                <tbody id="report-table-body">
+                    </tbody>
+            </table>
+        </div>
+        <div class="report-summary" id="report-summary-section">
+            </div>
+        <div class="report-footer">
+            <div>
+                <p><strong>Người lập báo cáo</strong></p>
+                <br><br><br>
+                <p>(Ký, họ tên)</p>
+            </div>
+            <div>
+                <p><strong>Quản lý</strong></p>
+                <br><br><br>
+                <p>(Ký, họ tên)</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const reportData = JSON.parse(localStorage.getItem('reportDataForPrint'));
+
+            if (reportData) {
+                document.title = reportData.title;
+                document.getElementById('report-title').textContent = reportData.title;
+                document.getElementById('report-date-range').textContent = reportData.dateRange;
+
+                const tableHead = document.getElementById('report-table-head');
+                const headerRow = document.createElement('tr');
+                headerRow.innerHTML = reportData.headers.map(h => `<th>${h}</th>`).join('');
+                tableHead.appendChild(headerRow);
+
+                const tableBody = document.getElementById('report-table-body');
+                reportData.rows.forEach(rowData => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = rowData.map(cell => `<td>${cell}</td>`).join('');
+                    tableBody.appendChild(row);
+                });
+
+                const summarySection = document.getElementById('report-summary-section');
+                summarySection.innerHTML = reportData.summary.map(item => `
+                    <div><strong>${item.label}</strong><strong>${item.value}</strong></div>
+                `).join('');
+
+                localStorage.removeItem('reportDataForPrint');
+                window.print();
+            } else {
+                document.body.innerHTML = '<h3>Không có dữ liệu báo cáo để hiển thị.</h3><p>Vui lòng quay lại trang Tổng quan để tạo báo cáo mới.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

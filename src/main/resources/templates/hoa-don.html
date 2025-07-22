@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hóa đơn bán hàng</title>
+    <style>
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            margin: 0; 
+            padding: 20px; 
+            color: #000; 
+            background-color: #fff; 
+            width: 300px; /* Kích thước khổ giấy in nhiệt phổ biến */
+        }
+        .receipt { 
+            text-align: center; 
+        }
+        .receipt-header h3 { 
+            margin: 0; 
+            font-size: 16px;
+        }
+        .receipt-header p { 
+            margin: 2px 0; 
+            font-size: 12px; 
+        }
+        .receipt-body { 
+            margin-top: 20px; 
+            text-align: left; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 12px; 
+        }
+        th, td { 
+            padding: 5px 0; 
+        }
+        .item-name { 
+            text-align: left; 
+            width: 60%;
+        }
+        .item-qty, .item-price { 
+            text-align: right; 
+        }
+        .totals { 
+            margin-top: 20px; 
+            border-top: 1px dashed #000; 
+        }
+        .totals div { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 3px 0; 
+            font-size: 13px; 
+        }
+        .receipt-footer { 
+            margin-top: 20px; 
+            font-size: 12px; 
+        }
+        @media print { 
+            body { 
+                -webkit-print-color-adjust: exact; 
+                padding: 0;
+            } 
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="receipt">
+        <div class="receipt-header">
+            <h3>ArtGallery POS</h3>
+            <p>123 Đường Nghệ Thuật, Q.1, TP. HCM</p>
+            <p>SĐT: 0987.654.321</p>
+            <h4>HÓA ĐƠN BÁN HÀNG</h4>
+            <p>Mã HĐ: <span id="receipt-id"></span></p>
+            <p>Ngày: <span id="receipt-date"></span></p>
+        </div>
+        <div class="receipt-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="item-name">Sản phẩm</th>
+                        <th class="item-qty">SL</th>
+                        <th class="item-price">Thành tiền</th>
+                    </tr>
+                    <tr><td colspan="3" style="border-bottom: 1px dashed #000;"></td></tr>
+                </thead>
+                <tbody id="receipt-items">
+                    </tbody>
+            </table>
+        </div>
+        <div class="totals">
+            <div><span>Tạm tính</span> <span id="receipt-subtotal"></span></div>
+            <div><span>Thuế (8%)</span> <span id="receipt-tax"></span></div>
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <strong>TỔNG CỘNG</strong> 
+                <strong id="receipt-total"></strong>
+            </div>
+        </div>
+        <div class="receipt-footer">
+            <p>Cảm ơn quý khách!</p>
+            <p>Hẹn gặp lại!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+            // Lấy dữ liệu đơn hàng từ localStorage
+            const orderData = JSON.parse(localStorage.getItem('currentOrderForPrint'));
+
+            if (orderData) {
+                // Điền thông tin chung
+                document.getElementById('receipt-id').textContent = orderData.id;
+                document.getElementById('receipt-date').textContent = orderData.date;
+
+                // Điền danh sách sản phẩm
+                const itemsBody = document.getElementById('receipt-items');
+                orderData.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="item-name">${item.name}</td>
+                        <td class="item-qty">${item.quantity}</td>
+                        <td class="item-price">${formatCurrency(item.price * item.quantity)}</td>`;
+                    itemsBody.appendChild(row);
+                });
+
+                // Điền thông tin tổng tiền
+                document.getElementById('receipt-subtotal').textContent = formatCurrency(orderData.subtotal);
+                document.getElementById('receipt-tax').textContent = formatCurrency(orderData.tax);
+                document.getElementById('receipt-total').textContent = formatCurrency(orderData.total);
+
+                // Xóa dữ liệu tạm thời sau khi dùng để tránh in lại nhầm
+                localStorage.removeItem('currentOrderForPrint');
+
+                // Tự động mở hộp thoại in của trình duyệt
+                window.print();
+            } else {
+                document.body.innerHTML = 'Không có dữ liệu hóa đơn để in.';
+            }
+        });
+    </script>
+</body>
+</html>

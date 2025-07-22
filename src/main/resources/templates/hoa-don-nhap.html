@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Phiếu Nhập Hàng</title>
+    <style>
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            margin: 0; 
+            padding: 20px; 
+            color: #000; 
+            background-color: #fff; 
+            width: 300px; /* Kích thước khổ giấy in nhiệt phổ biến */
+        }
+        .receipt { 
+            text-align: center; 
+        }
+        .receipt-header h3 { 
+            margin: 0; 
+            font-size: 16px;
+        }
+        .receipt-header p { 
+            margin: 2px 0; 
+            font-size: 12px; 
+        }
+        .receipt-body { 
+            margin-top: 20px; 
+            text-align: left; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 12px; 
+        }
+        th, td { 
+            padding: 5px 0; 
+        }
+        .item-name { 
+            text-align: left; 
+            width: 60%;
+        }
+        .item-price { 
+            text-align: right; 
+        }
+        .totals { 
+            margin-top: 20px; 
+            border-top: 1px dashed #000; 
+        }
+        .totals div { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 3px 0; 
+            font-size: 13px; 
+        }
+        .receipt-footer { 
+            margin-top: 20px; 
+            font-size: 12px; 
+        }
+        @media print { 
+            body { 
+                -webkit-print-color-adjust: exact; 
+                padding: 0;
+            } 
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="receipt">
+        <div class="receipt-header">
+            <h3>ArtGallery POS</h3>
+            <p>123 Đường Nghệ Thuật, Q.1, TP. HCM</p>
+            <h4>BIÊN BẢN NHẬP HÀNG</h4>
+            <p>Mã Phiếu: <span id="receipt-id"></span></p>
+            <p>Ngày nhập: <span id="receipt-date"></span></p>
+            <p>Nhà cung cấp: <span id="receipt-supplier"></span></p>
+        </div>
+        <div class="receipt-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="item-name">Sản phẩm</th>
+                        <th class="item-price">Giá nhập</th>
+                    </tr>
+                    <tr><td colspan="2" style="border-bottom: 1px dashed #000;"></td></tr>
+                </thead>
+                <tbody id="receipt-items">
+                    </tbody>
+            </table>
+        </div>
+        <div class="totals">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <strong>TỔNG CỘNG</strong> 
+                <strong id="receipt-total"></strong>
+            </div>
+        </div>
+        <div class="receipt-footer">
+            <p>Người lập phiếu</p>
+            <br><br>
+            <p>(Ký, họ tên)</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lấy dữ liệu từ localStorage
+            const slipData = JSON.parse(localStorage.getItem('slipForPrint'));
+
+            if (slipData) {
+                // Điền thông tin chung
+                document.getElementById('receipt-id').textContent = slipData.id;
+                document.getElementById('receipt-date').textContent = new Date(slipData.date).toLocaleDateString('vi-VN');
+                document.getElementById('receipt-supplier').textContent = slipData.artistName;
+
+                // Điền danh sách sản phẩm
+                const itemsBody = document.getElementById('receipt-items');
+                slipData.products.forEach(item => {
+                    const row = document.createElement('tr');
+                    // Vì số lượng nhập luôn là 1, ta không cần hiển thị cột SL
+                    row.innerHTML = `<td class="item-name">${item.name}</td><td class="item-price">${new Intl.NumberFormat('vi-VN').format(item.importPrice || item.price)}</td>`;
+                    itemsBody.appendChild(row);
+                });
+
+                // Điền tổng tiền
+                document.getElementById('receipt-total').textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(slipData.totalValue);
+
+                // Xóa dữ liệu tạm thời sau khi dùng để tránh in lại nhầm
+                localStorage.removeItem('slipForPrint');
+
+                // Tự động mở hộp thoại in của trình duyệt
+                window.print();
+            } else {
+                document.body.innerHTML = 'Không có dữ liệu để in.';
+            }
+        });
+    </script>
+</body>
+</html>

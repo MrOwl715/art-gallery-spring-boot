@@ -1,0 +1,571 @@
+/* =======================================
+   BIẾN TOÀN CỤC & THIẾT LẬP CƠ BẢN
+   ======================================= */
+
+:root {
+    --primary-color: #F97B22; 
+    --primary-hover-color: #d96a1e;
+    --sidebar-bg: #ffffff;
+    --background-color: #f8f9fa;
+    --text-dark: #212529;
+    --text-muted: #6c757d;
+    --sidebar-width: 260px;
+    --order-sidebar-width: 380px;
+    --header-height: 60px;
+    --border-radius: 0.75rem; 
+    --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
+    --shadow-md: 0 8px 16px rgba(0,0,0,0.07);
+    --transition-speed: 0.3s;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background-color: var(--background-color);
+    overflow-x: hidden; /* Chống cuộn ngang khi có animation */
+}
+
+/* =======================================
+   TÙY CHỈNH CÁC COMPONENT CỦA BOOTSTRAP
+   ======================================= */
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.form-range::-webkit-slider-thumb {
+    background-color: var(--primary-color);
+}
+.form-range::-moz-range-thumb {
+    background-color: var(--primary-color);
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(249, 123, 34, 0.25);
+}
+
+/* =======================================
+   HEADER VÀ LAYOUT CHÍNH
+   ======================================= */
+
+.navbar {
+    height: var(--header-height);
+    box-shadow: var(--shadow-sm);
+    z-index: 1030;
+}
+.navbar-brand {
+    font-weight: 700 !important;
+}
+
+.main-container {
+    padding-top: var(--header-height);
+    transition: margin-left var(--transition-speed) ease-in-out;
+}
+
+/* =======================================
+   SIDEBAR BÊN TRÁI (ẨN/HIỆN)
+   ======================================= */
+
+.main-sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    height: calc(100vh - var(--header-height));
+    background-color: var(--sidebar-bg);
+    position: fixed; 
+    top: var(--header-height);
+    left: 0;
+    /* Mặc định ẩn sang bên trái */
+    transform: translateX(-100%);
+    transition: transform var(--transition-speed) ease-in-out;
+    z-index: 1020;
+    border-right: 1px solid #dee2e6;
+}
+
+/* Khi container KHÔNG có class .sidebar-collapsed, sidebar sẽ hiện ra */
+.main-container:not(.sidebar-collapsed) .main-sidebar {
+    transform: translateX(0);
+}
+
+/* Đẩy nội dung chính sang phải khi sidebar hiện ra */
+.main-container:not(.sidebar-collapsed) {
+    margin-left: var(--sidebar-width);
+}
+
+.main-sidebar .nav-link {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.main-sidebar .nav-link:hover {
+    background-color: #f1f3f5;
+    color: var(--text-dark);
+}
+.main-sidebar .nav-link.active {
+    background: linear-gradient(90deg, var(--primary-color), #ffad70);
+    color: white;
+    box-shadow: 0 4px 8px rgba(249, 123, 34, 0.3);
+}
+.main-sidebar .nav-link i {
+    font-size: 1.2rem;
+    width: 30px;
+}
+
+
+/* =======================================
+   KHU VỰC NỘI DUNG CHÍNH (CONTENT)
+   ======================================= */
+
+.content-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    height: calc(100vh - var(--header-height));
+    padding: 1.5rem;
+}
+
+/* Bộ lọc Thể loại */
+#genre-filters .nav-link {
+    color: var(--text-muted);
+    font-weight: 600;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+#genre-filters .nav-link:hover {
+    color: var(--primary-color);
+}
+#genre-filters .nav-link.active {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    box-shadow: 0 4px 8px rgba(249, 123, 34, 0.3);
+}
+
+/* Card sản phẩm */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.product-card {
+    border: none;
+    background-color: #ffffff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow: hidden;
+    animation: fadeIn 0.5s ease-in-out forwards;
+}
+.product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-md);
+}
+.product-card .card-body {
+    cursor: pointer;
+}
+.product-card .card-img-top {
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+.product-card .price {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* =======================================
+   SIDEBAR BÊN PHẢI (ĐƠN HÀNG)
+   ======================================= */
+
+.order-sidebar {
+    width: var(--order-sidebar-width);
+    min-width: var(--order-sidebar-width);
+    height: calc(100vh - var(--header-height));
+    border-left: 1px solid #dee2e6;
+    z-index: 1000;
+}
+
+#cart-items {
+    overflow-y: auto;
+}
+
+.cart-item {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+#payment-btn {
+    font-weight: 600;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+}
+/* =======================================
+   STYLE BỔ SUNG CHO NÚT ICON
+   ======================================= */
+
+.btn-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%; /* Bo tròn nút */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.btn-icon .bi {
+    font-size: 1rem; /* Kích thước icon bên trong */
+}
+
+/* =======================================
+   MEDIA QUERIES FOR RESPONSIVE (Bản cập nhật)
+   ======================================= */
+
+/* ----- 1. Cho máy tính bảng và các màn hình nhỏ hơn (dưới 992px) ----- */
+@media (max-width: 991.98px) {
+    
+    /* --- Thay đổi layout chính BẰNG FLEXBOX --- */
+    /* Thay vì đổi thành display: block, ta chỉ cần đổi hướng của flexbox */
+    .main-container {
+        flex-direction: column;
+        margin-left: 0 !important; /* Vẫn giữ reset margin */
+    }
+
+    /* --- Tùy chỉnh Sidebar Trái (Menu) --- */
+    /* Biến nó thành menu off-canvas đúng nghĩa, cao toàn màn hình */
+    .main-sidebar {
+        position: fixed; /* Bắt buộc có position: fixed để nó tách khỏi luồng layout */
+        height: calc(100vh - var(--header-height)); /* ĐÃ SỬA LẠI */
+        top: var(--header-height);                 /* ĐÃ SỬA LẠI */
+        z-index: 1020;   /* Nằm trên mọi thứ khác */
+        box-shadow: var(--shadow-md);
+        transform: translateX(-100%); 
+    }
+    
+    /* Khi hiện ra, nó sẽ trượt từ bên trái vào */
+    .main-container:not(.sidebar-collapsed) .main-sidebar {
+        transform: translateX(0);
+    }
+    
+    /* Vì sidebar trái đã là fixed, ta không cần đẩy nội dung nữa */
+    .main-container:not(.sidebar-collapsed) {
+        margin-left: 0;
+    }
+
+    /* --- Tùy chỉnh khu vực Nội dung chính --- */
+    .content-area {
+        height: auto; /* Chiều cao tự động để nội dung có thể cuộn */
+    }
+
+    /* --- Tùy chỉnh Sidebar Phải (Đơn hàng) --- */
+    .order-sidebar {
+        width: 100%; /* Chiếm toàn bộ chiều rộng */
+        height: auto; /* Chiều cao tự động */
+        border-left: none;
+        border-top: 2px solid #dee2e6; /* Thêm đường viền ở trên để phân cách */
+        min-height: 400px; /* Chiều cao tối thiểu để dễ nhìn */
+    }
+
+    /* Ẩn chữ "Chào, Admin" để tiết kiệm không gian */
+    .navbar .d-none.d-sm-inline {
+        display: none !important;
+    }
+}
+
+
+/* ----- 2. Chỉ cho điện thoại di động (dưới 768px) - Phần này giữ nguyên ----- */
+@media (max-width: 767.98px) {
+    .content-area {
+        padding: 1rem;
+    }
+    .order-sidebar {
+        padding: 1rem;
+    }
+    .content-area > .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .content-area .input-group {
+        max-width: none !important;
+        margin-bottom: 1rem;
+    }
+    #genre-filters {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    #genre-filters .nav-link {
+        margin: 0.25rem;
+    }
+    #payment-btn {
+        padding: 0.9rem;
+        font-size: 1.1rem;
+    }
+}
+
+/* =======================================
+   CSS CHO TRANG QUẢN LÝ TRANH
+   ======================================= */
+
+/* Style cho bố cục danh sách */
+.painting-list-item {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    animation: fadeIn 0.5s ease-in-out forwards;
+}
+.painting-list-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.painting-list-item .item-image {
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    margin-right: 1.5rem;
+}
+
+.painting-list-item .item-info {
+    flex-grow: 1;
+}
+
+.painting-list-item .item-info h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.painting-list-item .item-info p {
+    margin-bottom: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.painting-list-item .item-price {
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 150px;
+    text-align: right;
+}
+
+.painting-list-item .item-status {
+    min-width: 120px;
+    text-align: center;
+}
+
+.painting-list-item .item-actions {
+    min-width: 100px;
+    text-align: right;
+}
+
+/* =======================================
+   CSS CHO Ô UPLOAD ẢNH
+   ======================================= */
+
+.image-upload-box {
+    width: 100%;
+    aspect-ratio: 4 / 3; /* Giữ tỉ lệ khung hình */
+    border: 2px dashed #ced4da;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    transition: background-color 0.2s, border-color 0.2s;
+    overflow: hidden; /* Ẩn các phần thừa của ảnh preview */
+}
+
+.image-upload-box:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.image-upload-box .upload-text {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.image-upload-box .image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ảnh preview sẽ vừa khít khung */
+    display: none; /* Mặc định ẩn ảnh preview */
+}
+
+/* Ẩn input type="file" mặc định của trình duyệt */
+.image-upload-box input[type="file"] {
+    display: none;
+}
+
+/* =======================================
+   CSS CHO TRANG DASHBOARD (Bản nâng cấp)
+   ======================================= */
+
+.kpi-card-v2 .card-body {
+    padding: 1.5rem;
+}
+.kpi-card-v2 i {
+    font-size: 1.75rem;
+    opacity: 0.7;
+}
+
+.activity-item, .browser-stat-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+.activity-item:last-child, .browser-stat-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.activity-item .icon-bg, .browser-stat-item .icon-bg {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-right: 1rem;
+}
+
+/* CSS NÂNG CẤP CHO KPI CARDS */
+.kpi-card-v2 {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.kpi-card-v2:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md) !important;
+}
+.kpi-card-v2 .icon-bg-soft {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* =======================================
+   CSS CHO TRANG ĐĂNG NHẬP
+   ======================================= */
+body.login-page {
+    background-color: #f0f2f5; /* Màu nền xám nhạt */
+}
+
+/* =======================================
+   CSS CHO CÁC HIỆU ỨNG TOÀN CỤC
+   ======================================= */
+
+/* --- Hiệu ứng 1: Tải trang mềm mại --- */
+body.preload {
+    opacity: 0;
+}
+body {
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* --- Hiệu ứng 2: Spotlight đi theo chuột --- */
+/* Chỉ áp dụng cho màn hình lớn */
+@media (min-width: 992px) {
+    body.login-page::before,
+    .content-area::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+            circle at var(--mouse-x) var(--mouse-y),
+            rgba(249, 123, 34, 0.15),      /* Màu cam nhạt ở tâm */
+            rgba(255, 255, 255, 0) 20%, /* Trong suốt ở khoảng giữa */
+            rgba(13, 110, 253, 0.05) 90% /* Màu xanh nhạt ở rìa */
+        );
+        z-index: -1; /* Luôn nằm dưới cùng */
+        pointer-events: none; /* Cho phép click xuyên qua */
+    }
+}
+
+
+/* --- Hiệu ứng 3: Hiện ra khi cuộn chuột --- */
+.card {
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+.card.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* Thêm vào file: css/style.css */
+
+/* --- Nâng cấp hiệu ứng cho Tooltip --- */
+.tooltip .tooltip-inner {
+    background-color: var(--text-dark);
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+}
+.bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before,
+.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: var(--text-dark);
+}
+.bs-tooltip-auto[data-popper-placement^=right] .tooltip-arrow::before,
+.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: var(--text-dark);
+}
+.bs-tooltip-auto[data-popper-placement^=bottom] .tooltip-arrow::before,
+.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: var(--text-dark);
+}
+.bs-tooltip-auto[data-popper-placement^=left] .tooltip-arrow::before,
+.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: var(--text-dark);
+}
+
+
+/* Thêm vào file: css/style.css */
+
+/* --- Tùy chỉnh thanh cuộn --- */
+/* Áp dụng cho các trình duyệt Webkit (Chrome, Safari, Edge mới) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color); /* Màu cam khi di chuột vào */
+}

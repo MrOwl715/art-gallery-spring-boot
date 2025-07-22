@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Thanh toán - ArtGallery POS</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="preload">
+
+    <header class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+    <div class="container-fluid">
+        <button class="btn btn-light me-2" type="button" id="sidebar-toggle-btn">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <a class="navbar-brand fw-bold text-primary" href="index.html">ArtGallery POS</a>
+        
+        <div class="ms-auto d-flex align-items-center">
+            <div class="dropdown">
+                <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" width="38" height="38" class="rounded-circle">
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end text-small shadow-sm">
+                    <li>
+                        <h6 class="dropdown-header">
+                            Quang Đẹp Zai
+                            <div class="small text-muted">Quản trị viên</div>
+                        </h6>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="thong-tin-ca-nhan.html"><i class="bi bi-person me-2"></i>Thông tin cá nhân</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="#"><i class="bi bi-gear me-2"></i>Cài đặt</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item d-flex align-items-center text-danger" href="dang-nhap.html"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div class="main-container d-flex">
+        
+        <nav class="main-sidebar d-flex flex-column p-3" id="main-sidebar">
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li><a href="index.html" class="nav-link text-dark"><i class="bi bi-house-door me-2"></i> Tổng quan</a></li>
+                <li><a href="ban-hang.html" class="nav-link text-dark"><i class="bi bi-cart4 me-2"></i> Bán hàng</a></li>
+                <li class="nav-item mt-3"><h6 class="text-muted small text-uppercase">Quản lý</h6></li>
+                <li><a href="quan-ly-don-hang.html" class="nav-link text-dark"><i class="bi bi-box-seam me-2"></i> Đơn hàng</a></li>
+                <li><a href="quan-ly-nhap-hang.html" class="nav-link text-dark"><i class="bi bi-box-arrow-in-down me-2"></i> Nhập hàng</a></li>
+                <li><a href="quan-ly-tranh.html" class="nav-link text-dark"><i class="bi bi-palette me-2"></i> Tranh</a></li>
+                <li><a href="quan-ly-hoa-si.html" class="nav-link text-dark"><i class="bi bi-brush me-2"></i> Họa sĩ</a></li>
+                <li><a href="quan-ly-danh-muc.html" class="nav-link text-dark"><i class="bi bi-tags me-2"></i> Danh mục</a></li>
+                <li><a href="quan-ly-khach-hang.html" class="nav-link text-dark"><i class="bi bi-people me-2"></i> Khách hàng</a></li>
+                <li class="nav-item mt-3"><h6 class="text-muted small text-uppercase">Hệ thống</h6></li>
+                <li><a href="quan-ly-thanh-toan.html" class="nav-link active" aria-current="page"><i class="bi bi-credit-card me-2"></i> Thanh toán</a></li>
+                <li><a href="quan-ly-tai-khoan.html" class="nav-link text-dark"><i class="bi bi-person-badge me-2"></i> Tài khoản</a></li>
+            </ul>
+        </nav>
+        
+        <main class="content-area p-4">
+            <h2 class="mb-4">Quản lý Phương thức Thanh toán</h2>
+            <p class="text-muted">Tại đây, bạn có thể bật/tắt và cấu hình các phương thức thanh toán được chấp nhận tại cửa hàng.</p>
+            
+            <div class="row g-4 mt-3">
+                <div class="col-md-6 col-xl-4 col-xxl-3">
+                    <div class="card h-100"><div class="card-body d-flex flex-column"><div class="d-flex justify-content-between"><div><i class="bi bi-cash-coin fs-2 text-success"></i><h5 class="card-title mt-2">Tiền mặt</h5></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" checked></div></div><p class="card-text small text-muted flex-grow-1">Chấp nhận thanh toán bằng tiền mặt trực tiếp tại quầy.</p><button class="btn btn-outline-secondary btn-sm mt-2" disabled>Không cần cấu hình</button></div></div>
+                </div>
+                <div class="col-md-6 col-xl-4 col-xxl-3">
+                    <div class="card h-100"><div class="card-body d-flex flex-column"><div class="d-flex justify-content-between"><div><i class="bi bi-qr-code-scan fs-2 text-primary"></i><h5 class="card-title mt-2">QR Ngân hàng</h5></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" checked></div></div><p class="card-text small text-muted flex-grow-1">Tạo mã VietQR động từ thông tin tài khoản ngân hàng của bạn.</p><button class="btn btn-outline-secondary btn-sm mt-2 config-btn" data-bs-toggle="modal" data-bs-target="#configPaymentModal" data-method="QR Ngân hàng">Cấu hình</button></div></div>
+                </div>
+                <div class="col-md-6 col-xl-4 col-xxl-3">
+                    <div class="card h-100"><div class="card-body d-flex flex-column"><div class="d-flex justify-content-between"><div><img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" height="32" alt="Momo"><h5 class="card-title mt-2">Ví điện tử Momo</h5></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" checked></div></div><p class="card-text small text-muted flex-grow-1">Cho phép khách hàng thanh toán bằng cách quét mã QR từ ví Momo.</p><button class="btn btn-outline-secondary btn-sm mt-2 config-btn" data-bs-toggle="modal" data-bs-target="#configPaymentModal" data-method="Ví Momo">Cấu hình</button></div></div>
+                </div>
+                <div class="col-md-6 col-xl-4 col-xxl-3">
+                    <div class="card h-100"><div class="card-body d-flex flex-column"><div class="d-flex justify-content-between"><div><img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png" height="32" alt="ZaloPay"><h5 class="card-title mt-2">Ví điện tử ZaloPay</h5></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch"></div></div><p class="card-text small text-muted flex-grow-1">Cho phép khách hàng thanh toán bằng cách quét mã QR từ ví ZaloPay.</p><button class="btn btn-outline-secondary btn-sm mt-2 config-btn" data-bs-toggle="modal" data-bs-target="#configPaymentModal" data-method="Ví ZaloPay">Cấu hình</button></div></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal fade" id="configPaymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cấu hình: <span id="config-modal-title" class="text-primary"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="config-modal-body">
+                    <p class="text-center text-muted">Đang tải cấu hình...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary">Lưu cấu hình</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/quan-ly-thanh-toan.js"></script>
+    <script src="js/global-effects.js" defer></script>
+</body>
+</html>

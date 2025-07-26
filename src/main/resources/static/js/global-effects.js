@@ -55,8 +55,8 @@ function checkUserRoleAndApplyUI() {
     const token = localStorage.getItem('accessToken');
 
     // Nếu không có token, chuyển về trang đăng nhập
-    if (!token && window.location.pathname !== '/login.html') {
-        window.location.href = '/login.html';
+    if (!token && window.location.pathname !== '/dang-nhap.html') {
+        window.location.href = '/dang-nhap.html';
         return;
     }
 
@@ -87,6 +87,6 @@ function checkUserRoleAndApplyUI() {
         console.error('Lỗi giải mã token hoặc áp dụng UI:', e);
         // Nếu token không hợp lệ, xóa và về trang đăng nhập
         localStorage.clear();
-        window.location.href = '/login.html';
+        window.location.href = '/dang-nhap.html';
     }
 }

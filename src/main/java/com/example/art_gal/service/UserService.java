@@ -11,7 +11,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.example.art_gal.dto.RegisterDTO; 
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +24,31 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder; 
+
+    @PreAuthorize("hasRole('MANAGER')")
+    public UserDTO createUser(RegisterDTO registerDTO) {
+        if (userRepository.findByUsername(registerDTO.getUsername()).isPresent()) {
+            throw new DataIntegrityViolationException("Username đã tồn tại!");
+        }
+        if (userRepository.findByEmail(registerDTO.getEmail()).isPresent()) {
+             throw new DataIntegrityViolationException("Email đã tồn tại!");
+        }
+
+        User user = new User();
+        user.setFullName(registerDTO.getFullName());
+        user.setUsername(registerDTO.getUsername());
+        user.setEmail(registerDTO.getEmail());
+        user.setPhone(null); // Tạm thời để null, có thể bổ sung sau
+        user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
+        user.setRole(registerDTO.getRole());
+        user.setStatus(UserStatus.DEACTIVE); // Mặc định là DEACTIVE
+
+        User savedUser = userRepository.save(user);
+        return convertToDTO(savedUser);
+    }
 
     public UserDTO getCurrentUser() {
         // Lấy username của người dùng đang đăng nhập

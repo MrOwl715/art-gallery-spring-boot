@@ -1,6 +1,9 @@
 package com.example.art_gal.service;
 
 import com.example.art_gal.dto.CategoryDTO;
+import com.example.art_gal.repository.PaintingRepository;
+import com.example.art_gal.entity.Painting;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.art_gal.entity.Category;
 import com.example.art_gal.exception.ResourceNotFoundException;
 import com.example.art_gal.repository.CategoryRepository;
@@ -16,6 +19,9 @@ public class CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private PaintingRepository paintingRepository;
+
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         Category category = convertToEntity(categoryDTO);
         Category savedCategory = categoryRepository.save(category);
@@ -23,7 +29,9 @@ public class CategoryService {
     }
 
     public List<CategoryDTO> getAllCategories() {
-        return categoryRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+        return categoryRepository.findAll().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
     
     public CategoryDTO getCategoryById(Long id) {
@@ -31,8 +39,20 @@ public class CategoryService {
         return convertToDTO(category);
     }
     
+    @Transactional // Đảm bảo tất cả thao tác trong hàm là một giao dịch
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = findCategoryById(id);
+
+        // Logic ẩn tranh hàng loạt
+        // Nếu trạng thái cũ là true (hiển thị) và trạng thái mới là false (ẩn)
+        if (category.isStatus() && !categoryDTO.isStatus()) {
+            List<Painting> paintingsToUpdate = paintingRepository.findByCategoryId(id);
+            for (Painting painting : paintingsToUpdate) {
+                painting.setStatus(false); // Cập nhật trạng thái của tranh thành false (ẩn)
+            }
+            paintingRepository.saveAll(paintingsToUpdate); // Lưu tất cả thay đổi
+        }
+
         category.setName(categoryDTO.getName());
         category.setDescription(categoryDTO.getDescription());
         category.setStatus(categoryDTO.isStatus());
@@ -56,6 +76,8 @@ public class CategoryService {
         dto.setName(category.getName());
         dto.setDescription(category.getDescription());
         dto.setStatus(category.isStatus());
+        // Lấy số lượng tranh từ repository
+        dto.setPaintingCount((int) paintingRepository.countByCategoryId(category.getId()));
         return dto;
     }
 

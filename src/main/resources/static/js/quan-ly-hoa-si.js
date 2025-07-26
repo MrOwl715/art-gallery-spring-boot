@@ -1,105 +1,212 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // --- CSDL MẪU (đã thêm trường mới) ---
-    const sampleArtists = [
-        { id: 'HS01', name: 'Văn Cao', phone: '0901234567', email: 'vancao@email.com', address: '123 Phố Huế, Hà Nội', joinDate: '2022-01-15', status: 'Đang hợp tác' },
-        { id: 'HS02', name: 'Bùi Xuân Phái', phone: '0912345678', email: 'buixuanphai@email.com', address: '45 Nguyễn Du, Hà Nội', joinDate: '2021-11-20', status: 'Đang hợp tác' },
-        { id: 'HS03', name: 'Lê Phổ', phone: '0923456789', email: 'lepho@email.com', address: '78 Hàng Bông, Hà Nội', joinDate: '2023-03-10', status: 'Đang hợp tác' },
-        { id: 'HS04', name: 'Nguyễn Gia Trí', phone: '0934567890', email: 'nguyengiatri@email.com', address: '21 Lý Thường Kiệt, Hà Nội', joinDate: '2020-05-01', status: 'Dừng hợp tác' },
-        { id: 'HS05', name: 'Mai Trung Thứ', phone: '0945678901', email: 'maitrungthu@email.com', address: '90 Phan Đình Phùng, Hà Nội', joinDate: '2022-08-22', status: 'Đang hợp tác' }
-    ];
+    // --- CẤU HÌNH API ---
+    const API_BASE_URL = '/api';
+    const token = localStorage.getItem('accessToken');
 
-    // --- Lấy các phần tử DOM ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
+    // --- BIẾN LƯU TRỮ DỮ LIỆU ---
+    let allArtists = []; // Mảng chứa toàn bộ họa sĩ từ API
+
+    // --- LẤY CÁC PHẦN TỬ DOM ---
     const artistsTableBody = document.getElementById('artists-table-body');
+    const addArtistModal = new bootstrap.Modal(document.getElementById('addArtistModal'));
     const editArtistModal = new bootstrap.Modal(document.getElementById('editArtistModal'));
+    
+    const addArtistForm = document.getElementById('add-artist-form');
+    const saveAddBtn = document.querySelector('#addArtistModal .btn-primary');
+    const saveEditBtn = document.querySelector('#editArtistModal .btn-primary');
+    
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const searchBtn = document.getElementById('search-btn');
 
-    // --- Hàm tiện ích ---
-    const getStatusBadge = (status) => {
-        const badgeClass = status === 'Đang hợp tác' ? 'bg-success' : 'bg-secondary';
-        return `<span class="badge ${badgeClass}">${status}</span>`;
-    };
+    // --- HÀM GỌI API CHUNG ---
+    async function fetchApi(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers,
+            },
+        });
+        if (response.status === 401 || response.status === 403) {
+            window.location.href = '/dang-nhap.html';
+        }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Có lỗi xảy ra');
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
 
-    // --- Hàm Render (đã cập nhật để hiển thị cột mới) ---
-    function renderArtists(artists) {
+    // --- HÀM TIỆN ÍCH ---
+    const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Đang hợp tác' : 'Dừng hợp tác'}</span>`;
+
+    // --- HÀM RENDER ---
+    function renderArtists(artistsToRender) {
         artistsTableBody.innerHTML = '';
-        if (!artists || artists.length === 0) {
-            artistsTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">Không có dữ liệu</td></tr>';
+        if (!artistsToRender || artistsToRender.length === 0) {
+            artistsTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">Không tìm thấy họa sĩ nào</td></tr>';
             return;
         }
-
-        artists.forEach((artist, index) => {
+        artistsToRender.forEach((artist, index) => {
             const row = document.createElement('tr');
-            // Cập nhật lại cấu trúc bảng để thêm cột Ngày hợp tác
             row.innerHTML = `
                 <th scope="row">${index + 1}</th>
-                <td>
-                    <div class="fw-bold">${artist.name}</div>
-                    <div class="small text-muted">${artist.id}</div>
-                </td>
+                <td><div class="fw-bold">${artist.name}</div></td>
                 <td>
                     <div><i class="bi bi-phone me-2"></i>${artist.phone || 'Chưa có'}</div>
-                    <div><i class="bi bi-envelope me-2"></i>${artist.email}</div>
+                    <div><i class="bi bi-envelope me-2"></i>${artist.email|| 'Chưa có'}</div>
                 </td>
-                <td>${artist.joinDate ? new Date(artist.joinDate).toLocaleDateString('vi-VN') : 'Chưa có'}</td>
+                <td>${artist.address || 'Chưa có'}</td>
                 <td class="text-center">${getStatusBadge(artist.status)}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${artist.id}" title="Chỉnh sửa">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary view-paintings-btn" data-name="${artist.name}" title="Xem các tác phẩm">
-                        <i class="bi bi-palette"></i>
-                    </button>
+                    <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${artist.id}" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${artist.id}" title="Xóa"><i class="bi bi-trash"></i></button>
                 </td>
             `;
             artistsTableBody.appendChild(row);
         });
     }
 
-    // --- Hàm xử lý Logic & Modal (đã cập nhật để điền các trường mới) ---
-    function handleEditClick(artistId) {
-        const artist = sampleArtists.find(a => a.id === artistId);
-        if (!artist) return;
+    // --- HÀM LỌC VÀ TÌM KIẾM ---
+    function filterAndRenderArtists() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const statusValue = statusFilter.value;
 
-        // Điền dữ liệu vào form, bao gồm cả các trường mới
-        document.getElementById('edit-artist-id').value = artist.id;
-        document.getElementById('edit-artist-name').value = artist.name;
-        document.getElementById('edit-artist-phone').value = artist.phone;
-        document.getElementById('edit-artist-email').value = artist.email;
-        document.getElementById('edit-artist-address').value = artist.address;
-        document.getElementById('edit-artist-date').value = artist.joinDate;
-        document.getElementById('edit-artist-status').value = artist.status;
-        
-        editArtistModal.show();
+        let filteredArtists = allArtists;
+
+        // 1. Lọc theo trạng thái
+        if (statusValue !== 'all') {
+            const isStatusActive = (statusValue === 'true');
+            filteredArtists = filteredArtists.filter(artist => artist.status === isStatusActive);
+        }
+
+        // 2. Lọc theo từ khóa tìm kiếm
+        if (searchTerm) {
+            filteredArtists = filteredArtists.filter(artist => 
+                artist.name.toLowerCase().includes(searchTerm) ||
+                (artist.phone && artist.phone.toLowerCase().includes(searchTerm)) ||
+                artist.email.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        renderArtists(filteredArtists);
     }
     
-    // --- HÀM MỚI: Xử lý chuyển trang và lọc ---
-    function handleViewPaintingsClick(artistName) {
-        // Lưu tên họa sĩ vào localStorage để trang kia có thể đọc được
-        localStorage.setItem('filterArtistName', artistName);
-        // Chuyển hướng đến trang quản lý tranh
-        window.location.href = 'quan-ly-tranh.html';
+    // --- HÀM TẢI DỮ LIỆU ---
+    async function loadArtists() {
+        try {
+            allArtists = await fetchApi('/artists');
+            filterAndRenderArtists();
+        } catch (error) {
+            console.error("Lỗi tải danh sách họa sĩ:", error);
+            alert(error.message);
+        }
     }
 
-    // --- Gắn các sự kiện (đã cập nhật) ---
-    sidebarToggleBtn.addEventListener('click', () => {
-        mainContainer.classList.toggle('sidebar-collapsed');
+    // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
+    async function handleAddArtist(event) {
+        event.preventDefault();
+        const artistData = {
+            name: document.getElementById('add-artist-name').value,
+            phone: document.getElementById('add-artist-phone').value,
+            email: document.getElementById('add-artist-email').value,
+            address: document.getElementById('add-artist-address').value,
+            biography: document.getElementById('add-artist-biography').value,
+            status: true
+        };
+
+        try {
+            await fetchApi('/artists', { method: 'POST', body: JSON.stringify(artistData) });
+            addArtistModal.hide();
+            addArtistForm.reset();
+            loadArtists();
+        } catch (error) {
+            alert(`Thêm thất bại: ${error.message}`);
+        }
+    }
+
+    async function handleEditClick(artistId) {
+        try {
+            const artist = await fetchApi(`/artists/${artistId}`);
+            document.getElementById('edit-artist-id').value = artist.id;
+            document.getElementById('edit-artist-name').value = artist.name;
+            document.getElementById('edit-artist-phone').value = artist.phone;
+            document.getElementById('edit-artist-email').value = artist.email;
+            document.getElementById('edit-artist-address').value = artist.address;
+            document.getElementById('edit-artist-biography').value = artist.biography;
+            document.getElementById('edit-artist-status').value = artist.status ? "true" : "false";
+            editArtistModal.show();
+        } catch (error) {
+            alert(`Lỗi: ${error.message}`);
+        }
+    }
+    
+    async function handleUpdateArtist(event) {
+        event.preventDefault();
+        const artistId = document.getElementById('edit-artist-id').value;
+        const artistData = {
+            name: document.getElementById('edit-artist-name').value,
+            phone: document.getElementById('edit-artist-phone').value,
+            email: document.getElementById('edit-artist-email').value,
+            address: document.getElementById('edit-artist-address').value,
+            biography: document.getElementById('edit-artist-biography').value,
+            status: document.getElementById('edit-artist-status').value === 'true'
+        };
+        
+        try {
+            await fetchApi(`/artists/${artistId}`, { method: 'PUT', body: JSON.stringify(artistData) });
+            editArtistModal.hide();
+            loadArtists();
+        } catch (error) {
+            alert(`Cập nhật thất bại: ${error.message}`);
+        }
+    }
+
+    async function handleDeleteClick(artistId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa họa sĩ này? Hành động này không thể hoàn tác.')) {
+            return;
+        }
+        try {
+            await fetchApi(`/artists/${artistId}`, { method: 'DELETE' });
+            loadArtists();
+        } catch (error) {
+             alert(`Xóa thất bại: ${error.message}`);
+        }
+    }
+
+    // --- GẮN CÁC SỰ KIỆN ---
+    saveAddBtn.addEventListener('click', handleAddArtist);
+    saveEditBtn.addEventListener('click', handleUpdateArtist);
+
+    searchBtn.addEventListener('click', filterAndRenderArtists);
+    statusFilter.addEventListener('change', filterAndRenderArtists);
+    searchInput.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            filterAndRenderArtists();
+        }
     });
 
     artistsTableBody.addEventListener('click', function(event) {
         const editBtn = event.target.closest('.edit-btn');
-        const viewPaintingsBtn = event.target.closest('.view-paintings-btn');
+        if (editBtn) handleEditClick(editBtn.dataset.id);
 
-        if (editBtn) {
-            handleEditClick(editBtn.dataset.id);
-        }
-        if (viewPaintingsBtn) {
-            handleViewPaintingsClick(viewPaintingsBtn.dataset.name);
-        }
+        const deleteBtn = event.target.closest('.delete-btn');
+        if (deleteBtn) handleDeleteClick(deleteBtn.dataset.id);
     });
+    
+    const editStatusSelect = document.getElementById('edit-artist-status');
+    if (editStatusSelect) {
+        editStatusSelect.innerHTML = `
+            <option value="true">Đang hợp tác</option>
+            <option value="false">Dừng hợp tác</option>
+        `;
+    }
 
-    // --- Khởi chạy ---
-    renderArtists(sampleArtists);
+    // --- KHỞI CHẠY ---
+    loadArtists();
 });

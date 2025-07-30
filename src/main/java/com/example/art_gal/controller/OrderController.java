@@ -50,4 +50,9 @@ public class OrderController {
         OrderDTO updatedOrder = orderService.updateOrderStatus(id, statusDTO);
         return ResponseEntity.ok(updatedOrder);
     }
+
+    @GetMapping("/imports")
+    public List<OrderDTO> getImportOrders() {
+        return orderService.getAllImportOrders();
+    }
 }

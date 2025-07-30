@@ -18,6 +18,8 @@ public class OrderDTO {
     // Dùng cho request
     private Long customerId;
     private Long artistId;
+    private String artistName;
+    private String customerName;
 
     @NotNull
     private Long paymentMethodId;

@@ -109,6 +109,13 @@ public class OrderService {
         return convertToDTO(order);
     }
 
+    public List<OrderDTO> getAllImportOrders() {
+        return orderRepository.findByType(OrderType.IMPORT).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    
     @Transactional
     public OrderDTO updateOrderStatus(Long id, UpdateOrderStatusDTO statusDTO) {
         Order order = orderRepository.findById(id)
@@ -165,9 +172,11 @@ public class OrderService {
         // Map customer hoặc artist ID tùy theo loại đơn hàng
         if (order.getCustomer() != null) {
             orderDTO.setCustomerId(order.getCustomer().getId());
+            orderDTO.setCustomerName(order.getCustomer().getName());
         }
         if (order.getArtist() != null) {
             orderDTO.setArtistId(order.getArtist().getId());
+            orderDTO.setArtistName(order.getArtist().getName());
         }
 
         // Map danh sách chi tiết đơn hàng từ List<OrderDetail> sang

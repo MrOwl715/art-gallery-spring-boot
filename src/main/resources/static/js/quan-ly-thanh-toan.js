@@ -1,22 +1,21 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
+    // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
     const token = localStorage.getItem('accessToken');
 
     // --- LẤY CÁC PHẦN TỬ DOM ---
-    const paymentMethodsContainer = document.querySelector('.row.g-4');
-    // Khởi tạo modal một cách an toàn hơn
-    const addModalEl = document.getElementById('addPaymentModal');
-    const configModalEl = document.getElementById('configPaymentModal');
-    const addPaymentModal = addModalEl ? new bootstrap.Modal(addModalEl) : null;
-    const configPaymentModal = configModalEl ? new bootstrap.Modal(configModalEl) : null;
+    const tableBody = document.getElementById('payment-methods-table-body');
+    const addModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
     
+    const addForm = document.getElementById('add-payment-form');
     const saveAddBtn = document.querySelector('#addPaymentModal .btn-primary');
-    const saveConfigBtn = document.querySelector('#configPaymentModal .btn-primary');
     
-    let currentEditingMethodId = null;
+    const saveEditBtn = document.querySelector('#editPaymentModal .btn-primary');
 
+    // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
@@ -30,121 +29,118 @@ document.addEventListener('DOMContentLoaded', function () {
         if (response.status === 204) return null;
         return response.json();
     }
-    
-    function renderPaymentMethods(methods) {
-        paymentMethodsContainer.innerHTML = '';
+
+    // --- HÀM TIỆN ÍCH ---
+    const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Hoạt động' : 'Tạm ẩn'}</span>`;
+
+    // --- HÀM RENDER ---
+    function renderMethods(methods) {
+        tableBody.innerHTML = '';
         if (!methods || methods.length === 0) {
-            paymentMethodsContainer.innerHTML = '<p class="text-muted">Chưa có phương thức thanh toán nào được cấu hình.</p>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">Chưa có phương thức thanh toán nào</td></tr>';
             return;
         }
-        methods.forEach(method => {
-            const col = document.createElement('div');
-            col.className = 'col-md-6 col-xl-4 col-xxl-3';
-            col.innerHTML = `
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <i class="bi bi-credit-card fs-2 text-primary"></i>
-                                <h5 class="card-title mt-2">${method.method}</h5>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input status-switch" type="checkbox" role="switch" data-id="${method.id}" ${method.status ? 'checked' : ''}>
-                            </div>
-                        </div>
-                        <p class="card-text small text-muted flex-grow-1">${method.description || 'Chưa có mô tả'}</p>
-                        <p class="card-text small"><strong>Thông tin:</strong> ${method.accountNumber || 'N/A'}</p>
-                        <button class="btn btn-outline-secondary btn-sm mt-2 config-btn" data-id="${method.id}">Cấu hình</button>
-                    </div>
-                </div>`;
-            paymentMethodsContainer.appendChild(col);
+        methods.forEach((method, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <th scope="row">${index + 1}</th>
+                <td><div class="fw-bold">${method.method}</div></td>
+                <td>${method.description || ''}</td>
+                <td>${method.accountNumber || ''}</td>
+                <td class="text-center">${getStatusBadge(method.status)}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${method.id}" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${method.id}" title="Xóa"><i class="bi bi-trash"></i></button>
+                </td>
+            `;
+            tableBody.appendChild(row);
         });
     }
+    
+    // --- HÀM TẢI DỮ LIỆU ---
+    async function loadMethods() {
+        try {
+            const methods = await fetchApi('/payment-methods');
+            renderMethods(methods);
+        } catch (error) {
+            console.error("Lỗi tải danh sách:", error);
+            alert(error.message);
+        }
+    }
 
-    async function handleAddMethod(event) {
+    // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
+    async function handleAdd(event) {
         event.preventDefault();
-        const methodData = {
+        const data = {
             method: document.getElementById('add-method-name').value,
             description: document.getElementById('add-method-desc').value,
             accountNumber: document.getElementById('add-method-account').value,
             status: true
         };
         try {
-            await fetchApi('/payment-methods', { method: 'POST', body: JSON.stringify(methodData) });
-            if (addPaymentModal) addPaymentModal.hide();
-            document.getElementById('add-payment-form').reset();
-            loadPaymentMethods();
+            await fetchApi('/payment-methods', { method: 'POST', body: JSON.stringify(data) });
+            addModal.hide();
+            addForm.reset();
+            loadMethods();
         } catch (error) {
             alert(`Thêm thất bại: ${error.message}`);
         }
     }
 
-    async function handleStatusToggle(methodId, newStatus) {
+    async function handleEditClick(methodId) {
         try {
             const method = await fetchApi(`/payment-methods/${methodId}`);
-            method.status = newStatus;
-            await fetchApi(`/payment-methods/${methodId}`, { method: 'PUT', body: JSON.stringify(method) });
-        } catch (error) {
-            alert(`Cập nhật trạng thái thất bại: ${error.message}`);
-            document.querySelector(`.status-switch[data-id="${methodId}"]`).checked = !newStatus;
-        }
-    }
-
-    async function handleConfigClick(methodId) {
-        currentEditingMethodId = methodId;
-        try {
-            const method = await fetchApi(`/payment-methods/${methodId}`);
-            document.getElementById('config-modal-title').textContent = method.method;
-            const modalBody = document.getElementById('config-modal-body');
-            modalBody.innerHTML = `
-                <div class="mb-3"><label class="form-label">Tên phương thức</label><input type="text" id="config-method-name" class="form-control" value="${method.method}"></div>
-                <div class="mb-3"><label class="form-label">Mô tả</label><textarea id="config-method-desc" class="form-control" rows="3">${method.description || ''}</textarea></div>
-                <div class="mb-3"><label class="form-label">Số tài khoản/Thông tin liên quan</label><input type="text" id="config-method-account" class="form-control" value="${method.accountNumber || ''}"></div>
-            `;
-            if (configPaymentModal) configPaymentModal.show();
+            document.getElementById('edit-method-id').value = method.id;
+            document.getElementById('edit-method-name').value = method.method;
+            document.getElementById('edit-method-desc').value = method.description;
+            document.getElementById('edit-method-account').value = method.accountNumber;
+            document.getElementById('edit-method-status').value = method.status.toString();
+            editModal.show();
         } catch (error) {
             alert(`Lỗi: ${error.message}`);
         }
     }
     
-    async function handleSaveConfig() {
-        if (!currentEditingMethodId) return;
-        const methodData = {
-            id: currentEditingMethodId,
-            method: document.getElementById('config-method-name').value,
-            description: document.getElementById('config-method-desc').value,
-            accountNumber: document.getElementById('config-method-account').value,
-            status: document.querySelector(`.status-switch[data-id="${currentEditingMethodId}"]`).checked
+    async function handleUpdate(event) {
+        event.preventDefault();
+        const methodId = document.getElementById('edit-method-id').value;
+        const data = {
+            method: document.getElementById('edit-method-name').value,
+            description: document.getElementById('edit-method-desc').value,
+            accountNumber: document.getElementById('edit-method-account').value,
+            status: document.getElementById('edit-method-status').value === 'true'
         };
         try {
-            await fetchApi(`/payment-methods/${currentEditingMethodId}`, { method: 'PUT', body: JSON.stringify(methodData) });
-            if (configPaymentModal) configPaymentModal.hide();
-            loadPaymentMethods();
+            await fetchApi(`/payment-methods/${methodId}`, { method: 'PUT', body: JSON.stringify(data) });
+            editModal.hide();
+            loadMethods();
         } catch (error) {
-            alert(`Lưu cấu hình thất bại: ${error.message}`);
+            alert(`Cập nhật thất bại: ${error.message}`);
         }
     }
 
-    async function loadPaymentMethods() {
+    async function handleDeleteClick(methodId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa phương thức này?')) return;
         try {
-            const methods = await fetchApi('/payment-methods');
-            renderPaymentMethods(methods);
-        } catch(error) {
-            console.error(error);
-            paymentMethodsContainer.innerHTML = '<p class="text-danger">Không thể tải dữ liệu phương thức thanh toán.</p>';
+            await fetchApi(`/payment-methods/${methodId}`, { method: 'DELETE' });
+            loadMethods();
+        } catch (error) {
+             alert(`Xóa thất bại: ${error.message}`);
         }
     }
 
-    if (saveAddBtn) saveAddBtn.addEventListener('click', handleAddMethod);
-    if (saveConfigBtn) saveConfigBtn.addEventListener('click', handleSaveConfig);
+    // --- GẮN CÁC SỰ KIỆN ---
+    saveAddBtn.addEventListener('click', handleAdd);
+    saveEditBtn.addEventListener('click', handleUpdate);
 
-    paymentMethodsContainer.addEventListener('click', function(event) {
-        const statusSwitch = event.target.closest('.status-switch');
-        if (statusSwitch) handleStatusToggle(statusSwitch.dataset.id, statusSwitch.checked);
-        
-        const configBtn = event.target.closest('.config-btn');
-        if (configBtn) handleConfigClick(configBtn.dataset.id);
+    tableBody.addEventListener('click', function(event) {
+        const editBtn = event.target.closest('.edit-btn');
+        if (editBtn) handleEditClick(editBtn.dataset.id);
+
+        const deleteBtn = event.target.closest('.delete-btn');
+        if (deleteBtn) handleDeleteClick(deleteBtn.dataset.id);
     });
     
-    loadPaymentMethods();
+    // --- KHỞI CHẠY ---
+    loadMethods();
 });

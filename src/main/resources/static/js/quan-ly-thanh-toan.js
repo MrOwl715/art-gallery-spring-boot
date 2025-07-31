@@ -30,10 +30,33 @@ document.addEventListener('DOMContentLoaded', function () {
         return response.json();
     }
 
-    // --- HÀM TIỆN ÍCH ---
+    // --- HÀM MỚI: UPLOAD FILE ---
+    async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Khi gửi FormData, trình duyệt sẽ tự động đặt Content-Type là multipart/form-data
+    // nên chúng ta không cần khai báo nó trong headers.
+    const response = await fetch(`${API_BASE_URL}/files/upload/qr`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+            // Xóa dòng 'Content-Type': 'application/json'
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        throw new Error('Upload file thất bại.');
+    }
+    const result = await response.json();
+    return result.filePath; // Trả về đường dẫn file trên server
+}
+
+
+    // --- HÀM TIỆN ÍCH & RENDER ---
     const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Hoạt động' : 'Tạm ẩn'}</span>`;
 
-    // --- HÀM RENDER ---
     function renderMethods(methods) {
         tableBody.innerHTML = '';
         if (!methods || methods.length === 0) {
@@ -71,13 +94,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
     async function handleAdd(event) {
         event.preventDefault();
-        const data = {
-            method: document.getElementById('add-method-name').value,
-            description: document.getElementById('add-method-desc').value,
-            accountNumber: document.getElementById('add-method-account').value,
-            status: true
-        };
+        const fileInput = document.getElementById('add-method-qr-file');
+        let qrCodeImageUrl = '';
+
         try {
+            if (fileInput.files.length > 0) {
+                qrCodeImageUrl = await uploadFile(fileInput.files[0]);
+            }
+
+            const data = {
+                method: document.getElementById('add-method-name').value,
+                description: document.getElementById('add-method-desc').value,
+                accountNumber: document.getElementById('add-method-account').value,
+                qrCodeImageUrl: qrCodeImageUrl,
+                status: true
+            };
+            
             await fetchApi('/payment-methods', { method: 'POST', body: JSON.stringify(data) });
             addModal.hide();
             addForm.reset();
@@ -94,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-method-name').value = method.method;
             document.getElementById('edit-method-desc').value = method.description;
             document.getElementById('edit-method-account').value = method.accountNumber;
+            document.getElementById('edit-method-qr-url').value = method.qrCodeImageUrl || '';
             document.getElementById('edit-method-status').value = method.status.toString();
             editModal.show();
         } catch (error) {
@@ -104,13 +137,22 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleUpdate(event) {
         event.preventDefault();
         const methodId = document.getElementById('edit-method-id').value;
-        const data = {
-            method: document.getElementById('edit-method-name').value,
-            description: document.getElementById('edit-method-desc').value,
-            accountNumber: document.getElementById('edit-method-account').value,
-            status: document.getElementById('edit-method-status').value === 'true'
-        };
+        let qrCodeImageUrl = document.getElementById('edit-method-qr-url').value;
+        const fileInput = document.getElementById('edit-method-qr-file');
+
         try {
+            if (fileInput.files.length > 0) {
+                qrCodeImageUrl = await uploadFile(fileInput.files[0]);
+            }
+
+            const data = {
+                method: document.getElementById('edit-method-name').value,
+                description: document.getElementById('edit-method-desc').value,
+                accountNumber: document.getElementById('edit-method-account').value,
+                qrCodeImageUrl: qrCodeImageUrl,
+                status: document.getElementById('edit-method-status').value === 'true'
+            };
+
             await fetchApi(`/payment-methods/${methodId}`, { method: 'PUT', body: JSON.stringify(data) });
             editModal.hide();
             loadMethods();

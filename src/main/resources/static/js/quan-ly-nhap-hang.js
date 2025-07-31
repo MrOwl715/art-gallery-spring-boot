@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (targetBtn.classList.contains('view-detail-btn')) {
             handleViewDetailClick(slipId);
         }
-    });
+    });  
 
     // --- KHỞI CHẠY ---
     loadImportSlips();

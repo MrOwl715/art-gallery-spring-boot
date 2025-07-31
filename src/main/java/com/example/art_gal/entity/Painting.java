@@ -19,15 +19,16 @@ public class Painting {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private BigDecimal price;
+    // --- CÁC THAY ĐỔI ---
+    @Column(name = "import_price", nullable = false)
+    private BigDecimal importPrice; // Giá nhập
+
+    @Column(name = "selling_price", nullable = false)
+    private BigDecimal sellingPrice; // Giá bán
 
     private String imageUrl;
-
     private int quantity;
-
     private String material;
-
     private String size;
 
     @Column(nullable = false)
@@ -37,8 +38,7 @@ public class Painting {
     @JoinColumn(name = "artist_id", nullable = false)
     private Artist artist;
 
-    // --- THÊM MỚI ---
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false) // Khóa ngoại tới bảng categories
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 }

@@ -28,6 +28,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder; 
 
+    @Autowired
+    private ActivityLogService activityLogService;
+
     @PreAuthorize("hasRole('MANAGER')")
     public UserDTO createUser(RegisterDTO registerDTO) {
         if (userRepository.findByUsername(registerDTO.getUsername()).isPresent()) {
@@ -41,12 +44,15 @@ public class UserService {
         user.setFullName(registerDTO.getFullName());
         user.setUsername(registerDTO.getUsername());
         user.setEmail(registerDTO.getEmail());
-        user.setPhone(null); // Tạm thời để null, có thể bổ sung sau
+        user.setPhone(registerDTO.getPhone());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
         user.setRole(registerDTO.getRole());
-        user.setStatus(UserStatus.DEACTIVE); // Mặc định là DEACTIVE
+        user.setStatus(UserStatus.DEACTIVE); // Mặc định là chưa kích hoạt
 
         User savedUser = userRepository.save(user);
+        
+        activityLogService.logActivity("TẠO TÀI KHOẢN", "Đã tạo tài khoản mới: " + savedUser.getUsername());
+
         return convertToDTO(savedUser);
     }
 
@@ -67,13 +73,16 @@ public class UserService {
         return userRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    @PreAuthorize("hasRole('MANAGER')") // Chỉ MANAGER mới có quyền gọi hàm này
+    @PreAuthorize("hasRole('MANAGER')")
     public UserDTO updateUserStatus(Long userId, UserStatus status) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         
         user.setStatus(status);
         User updatedUser = userRepository.save(user);
+
+        activityLogService.logActivity("CẬP NHẬT TRẠNG THÁI USER", "Đã đổi trạng thái tài khoản " + updatedUser.getUsername() + " thành " + status.name());
+
         return convertToDTO(updatedUser);
     }
 
@@ -82,7 +91,6 @@ public class UserService {
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Kiểm tra xem email mới có bị trùng với người dùng khác không
         Optional<User> userByNewEmail = userRepository.findByEmail(updateUserDTO.getEmail());
         if (userByNewEmail.isPresent() && !userByNewEmail.get().getId().equals(currentUser.getId())) {
             throw new DataIntegrityViolationException("Email đã được sử dụng bởi một tài khoản khác.");
@@ -93,6 +101,7 @@ public class UserService {
         currentUser.setPhone(updateUserDTO.getPhone());
 
         User updatedUser = userRepository.save(currentUser);
+        activityLogService.logActivity("CẬP NHẬT THÔNG TIN", "Đã tự cập nhật thông tin cá nhân.");
         return convertToDTO(updatedUser);
     }
 

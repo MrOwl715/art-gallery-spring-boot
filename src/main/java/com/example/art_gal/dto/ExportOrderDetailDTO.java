@@ -6,16 +6,17 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class OrderDetailDTO {
+public class ExportOrderDetailDTO {
     private Long id;
-
-    @NotNull
+    
+    @NotNull(message = "ID Tranh không được để trống")
     private Long paintingId;
 
-    @Min(1)
+    @NotNull(message = "Số lượng không được để trống")
+    @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private int quantity;
     
-    // Các trường này dùng cho response
+    // Các trường dùng cho response
     private String paintingName; 
     private BigDecimal price;
 }

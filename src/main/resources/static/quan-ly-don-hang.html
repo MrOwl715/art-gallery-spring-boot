@@ -65,28 +65,27 @@
         </nav>
         
         <main class="content-area p-4">
-            <h2 class="mb-4">Quản lý Đơn hàng</h2>
+            <h2 class="mb-4">Quản lý Đơn hàng Bán</h2>
             
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
-                            <input type="text" class="form-control" placeholder="Tìm theo Mã ĐH, Tên khách hàng...">
+                            <input type="text" id="search-input" class="form-control" placeholder="Tìm theo Mã ĐH, Tên khách hàng...">
                         </div>
                         <div class="col-md-3">
-                            <select class="form-select">
-                                <option selected>Tất cả trạng thái</option>
-                                <option value="1">Chờ xác nhận</option>
-                                <option value="2">Đang xử lý</option>
-                                <option value="3">Hoàn thành</option>
-                                <option value="4">Đã hủy</option>
+                            <select class="form-select" id="status-filter">
+                                <option value="ALL" selected>Tất cả trạng thái</option>
+                                <option value="COMPLETED">Hoàn thành</option>
+                                <option value="PENDING">Chờ xử lý</option>
+                                <option value="CANCELLED">Đã hủy</option>
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <input type="date" class="form-control">
+                            <input type="date" id="date-filter" class="form-control">
                         </div>
                         <div class="col-md-2">
-                            <button class="btn btn-primary w-100">Tìm kiếm</button>
+                            <button class="btn btn-primary w-100" id="search-btn">Tìm kiếm</button>
                         </div>
                     </div>
                 </div>
@@ -100,25 +99,16 @@
                                 <tr>
                                     <th scope="col">Mã ĐH</th>
                                     <th scope="col">Khách hàng</th>
+                                    <th scope="col">Người tạo</th>
                                     <th scope="col">Ngày tạo</th>
-                                    <th scope="col">Tổng tiền</th>
-                                    <th scope="col">Trạng thái</th>
+                                    <th scope="col" class="text-end">Tổng tiền</th>
+                                    <th scope="col" class="text-center">Trạng thái</th>
                                     <th scope="col" class="text-center">Hành động</th>
                                 </tr>
                             </thead>
-                            <tbody id="orders-table-body">
-                                </tbody>
+                            <tbody id="orders-table-body"></tbody>
                         </table>
                     </div>
-                    <nav class="mt-3 d-flex justify-content-end">
-                        <ul class="pagination">
-                            <li class="page-item disabled"><a class="page-link" href="#">Trước</a></li>
-                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item"><a class="page-link" href="#">Sau</a></li>
-                        </ul>
-                    </nav>
                 </div>
             </div>
         </main>
@@ -129,7 +119,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Chi tiết Đơn hàng: <span id="modal-order-id" class="text-primary"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row mb-4">
@@ -142,40 +132,33 @@
                             <strong>Trạng thái:</strong> <span id="modal-order-status"></span>
                         </div>
                     </div>
-                    
                     <h6>Sản phẩm đã mua</h6>
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="table table-sm">
                             <thead>
-                                <tr><th>Sản phẩm</th><th>Họa sĩ</th><th class="text-end">Giá</th></tr>
+                                <tr><th>Sản phẩm</th><th>Số lượng</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr>
                             </thead>
-                            <tbody id="modal-product-list">
-                                </tbody>
+                            <tbody id="modal-product-list"></tbody>
                         </table>
                     </div>
                     <hr>
                     <div class="row justify-content-end text-end">
                         <div class="col-md-6">
-                            <div class="d-flex justify-content-between"><span>Tạm tính:</span> <strong id="modal-subtotal"></strong></div>
-                            <div class="d-flex justify-content-between"><span>Thuế (8%):</span> <strong id="modal-tax"></strong></div>
                             <div class="d-flex justify-content-between fs-5 mt-2"><span>TỔNG CỘNG:</span> <strong id="modal-total" class="text-primary"></strong></div>
                         </div>
                     </div>
-
-                    <div class="mt-4">
+                     <div class="mt-4">
                         <label for="update-status-select" class="form-label">Cập nhật trạng thái đơn hàng</label>
                         <select class="form-select" id="update-status-select">
-                            <option value="Chờ xác nhận">Chờ xác nhận</option>
-                            <option value="Đang xử lý">Đang xử lý</option>
-                            <option value="Hoàn thành">Hoàn thành</option>
-                            <option value="Đã hủy">Đã hủy</option>
+                            <option value="PENDING">Chờ xử lý</option>
+                            <option value="COMPLETED">Hoàn thành</option>
+                            <option value="CANCELLED">Đã hủy</option>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-danger">Hủy đơn hàng</button>
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
-                    <button type="button" class="btn btn-primary">Lưu thay đổi</button>
+                    <button type="button" class="btn btn-primary" id="save-status-btn">Lưu thay đổi</button>
                 </div>
             </div>
         </div>

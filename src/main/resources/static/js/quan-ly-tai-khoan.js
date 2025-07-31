@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (response.status === 401 || response.status === 403) {
             alert('Bạn không có quyền truy cập chức năng này hoặc phiên đăng nhập đã hết hạn.');
-            window.location.href = '/dang-nhap.html';
+            window.location.href = '/index.html';
             throw new Error('Unauthorized'); // Dừng thực thi
         }
         if (!response.ok) {

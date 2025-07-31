@@ -5,9 +5,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const API_BASE_URL = '/api';
     const token = localStorage.getItem('accessToken');
 
+    let allImportSlips = [];
+
     // --- LẤY CÁC PHẦN TỬ DOM ---
     const importsTableBody = document.getElementById('imports-table-body');
-    
+    const importDetailModal = new bootstrap.Modal(document.getElementById('importDetailModal'));
+
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -39,28 +42,73 @@ document.addEventListener('DOMContentLoaded', function () {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><div class="fw-bold text-primary">#${item.id}</div></td>
-                <td>${item.artistName}</td>
-                <td>${formatDate(item.orderDate)}</td>
-                <td>N/A</td> <td class="text-end fw-bold">${formatCurrency(item.totalAmount)}</td>
+                <td>${item.artistName || 'N/A'}</td>
+                <td>${formatDate(item.importDate)}</td>
+                <td>${item.createdByUsername || 'N/A'}</td>
+                <td class="text-end fw-bold">${formatCurrency(item.totalAmount)}</td>
                 <td class="text-center">${getStatusBadge(item.status)}</td>
                 <td class="text-center">
-                    </td>
+                    <button class="btn btn-sm btn-outline-secondary view-detail-btn" data-id="${item.id}" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
+                    <button class="btn btn-sm btn-outline-info print-btn" data-id="${item.id}" title="In phiếu"><i class="bi bi-printer"></i></button>
+                </td>
             `;
             importsTableBody.appendChild(row);
         });
     }
 
+     function handleViewDetailClick(slipId) {
+        const slip = allImportSlips.find(s => s.id == slipId);
+        if (!slip) {
+            alert('Không tìm thấy thông tin phiếu nhập.');
+            return;
+        }
+
+        document.getElementById('modal-import-id').textContent = '#' + slip.id;
+        document.getElementById('modal-artist-name').textContent = slip.artistName;
+        document.getElementById('modal-employee-name').textContent = slip.createdByUsername;
+        document.getElementById('modal-import-date').textContent = formatDate(slip.importDate);
+        document.getElementById('modal-import-status').innerHTML = getStatusBadge(slip.status);
+        document.getElementById('modal-total').textContent = formatCurrency(slip.totalAmount);
+        
+        const productListBody = document.getElementById('modal-product-list');
+        productListBody.innerHTML = '';
+        slip.slipDetails.forEach(p => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${p.paintingName}</td>
+                <td>${p.quantity}</td>
+                <td class="text-end">${formatCurrency(p.importPrice)}</td>
+                <td class="text-end fw-bold">${formatCurrency(p.importPrice * p.quantity)}</td>
+            `;
+            productListBody.appendChild(row);
+        });
+        
+        importDetailModal.show();
+    }
+
+
     // --- HÀM TẢI DỮ LIỆU ---
-    async function loadImportOrders() {
+    async function loadImportSlips() {
         try {
-            const importOrders = await fetchApi('/orders/imports');
-            renderImports(importOrders);
+            allImportSlips = await fetchApi('/import-slips');
+            renderImports(allImportSlips);
         } catch (error) {
             console.error("Lỗi tải danh sách phiếu nhập:", error);
             importsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-5">Không thể tải dữ liệu</td></tr>';
         }
     }
 
+    importsTableBody.addEventListener('click', function(event) {
+        const targetBtn = event.target.closest('button');
+        if (!targetBtn) return;
+        
+        const slipId = targetBtn.dataset.id;
+
+        if (targetBtn.classList.contains('view-detail-btn')) {
+            handleViewDetailClick(slipId);
+        }
+    });
+
     // --- KHỞI CHẠY ---
-    loadImportOrders();
+    loadImportSlips();
 });

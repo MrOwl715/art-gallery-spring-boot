@@ -17,11 +17,11 @@ public class PaintingController {
     @Autowired
     private PaintingService paintingService;
 
-    @PostMapping
-    public ResponseEntity<PaintingDTO> createPainting(@Valid @RequestBody PaintingDTO paintingDTO) {
-        PaintingDTO createdPainting = paintingService.createPainting(paintingDTO);
-        return new ResponseEntity<>(createdPainting, HttpStatus.CREATED);
-    }
+    // @PostMapping
+    // public ResponseEntity<PaintingDTO> createPainting(@Valid @RequestBody PaintingDTO paintingDTO) {
+    //     PaintingDTO createdPainting = paintingService.createPainting(paintingDTO);
+    //     return new ResponseEntity<>(createdPainting, HttpStatus.CREATED);
+    // }
 
     @GetMapping
     public List<PaintingDTO> getAllPaintings() {
@@ -41,9 +41,9 @@ public class PaintingController {
         return ResponseEntity.ok(updatedPainting);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePainting(@PathVariable(value = "id") Long paintingId) {
-        paintingService.deletePainting(paintingId);
-        return ResponseEntity.noContent().build();
-    }
+    // @DeleteMapping("/{id}")
+    // public ResponseEntity<Void> deletePainting(@PathVariable(value = "id") Long paintingId) {
+    //     paintingService.deletePainting(paintingId);
+    //     return ResponseEntity.noContent().build();
+    // }
 }

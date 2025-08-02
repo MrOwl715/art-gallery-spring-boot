@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 localStorage.setItem('tokenType', data.tokenType);
                 
                 // Chuyển hướng đến trang dashboard (hoặc trang chính)
-                window.location.href = '/index.html'; // Đổi tên file nếu trang chính của bạn khác
+                window.location.href = '/ban-hang.html'; // Đổi tên file nếu trang chính của bạn khác
             } else {
                 // Nếu có lỗi (sai pass, user không tồn tại,...)
                 const errorData = await response.json();

@@ -23,51 +23,7 @@ body {
     background-color: var(--background-color);
     overflow-x: hidden; /* Chống cuộn ngang khi có animation */
 }
-/* =======================================
-   STYLE CHO SẢN PHẨM ĐÃ BÁN
-   ======================================= */
 
-/* Hiệu ứng chung cho sản phẩm đã bán */
-.is-sold {
-    opacity: 0.65; /* Làm mờ đi một chút */
-    position: relative; /* Cần thiết để hiển thị nhãn "ĐÃ BÁN" */
-}
-
-/* Chuyển ảnh sang màu xám */
-.is-sold .card-img-top,
-.is-sold .item-image {
-    filter: grayscale(100%);
-}
-
-/* Vô hiệu hóa hiệu ứng hover trên sản phẩm đã bán */
-.is-sold:hover {
-    transform: none;
-    box-shadow: var(--shadow-sm);
-}
-
-/* Ẩn nút chỉnh sửa đối với sản phẩm đã bán */
-.is-sold .edit-btn {
-    display: none;
-}
-
-/* Thêm nhãn "ĐÃ BÁN" cho chế độ xem lưới (grid view) */
-.product-card.is-sold::after {
-    content: 'ĐÃ BÁN';
-    position: absolute;
-    top: 40%; /* Điều chỉnh vị trí của nhãn */
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg);
-    background-color: rgba(217, 39, 39, 0.8); /* Màu đỏ đậm, hơi trong suốt */
-    color: white;
-    padding: 8px 24px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 1.5rem;
-    z-index: 10;
-    pointer-events: none; /* Cho phép click xuyên qua nhãn */
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-}
 
 /* =======================================
    TÙY CHỈNH CÁC COMPONENT CỦA BOOTSTRAP
@@ -613,4 +569,50 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color); /* Màu cam khi di chuột vào */
+}
+
+/* =======================================
+   STYLE CHO SẢN PHẨM ĐÃ BÁN
+   ======================================= */
+
+/* Hiệu ứng chung cho sản phẩm đã bán */
+.is-sold {
+    opacity: 0.65; /* Làm mờ đi một chút */
+    position: relative; /* Cần thiết để hiển thị nhãn "ĐÃ BÁN" */
+}
+
+/* Chuyển ảnh sang màu xám */
+.is-sold .card-img-top,
+.is-sold .item-image {
+    filter: grayscale(100%);
+}
+
+/* Vô hiệu hóa hiệu ứng hover trên sản phẩm đã bán */
+.is-sold:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Ẩn nút chỉnh sửa đối với sản phẩm đã bán */
+.is-sold .edit-btn {
+    display: none;
+}
+
+/* Thêm nhãn "ĐÃ BÁN" cho chế độ xem lưới (grid view) */
+.product-card.is-sold::after {
+    content: 'ĐÃ BÁN';
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    background-color: rgba(217, 39, 39, 0.8);
+    color: white;
+    padding: 8px 24px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 1.5rem;
+    z-index: 10;
+    pointer-events: none;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.8);
 }

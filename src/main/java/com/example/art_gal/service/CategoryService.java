@@ -44,13 +44,14 @@ public class CategoryService {
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = findCategoryById(id);
 
-        // --- BẮT ĐẦU LOGIC CẬP NHẬT TRẠNG THÁI TRANH ---
+        // --- BẮT ĐẦU LOGIC CẬP NHẬT TRẠNG THÁI TRANH THEO YÊU CẦU MỚI ---
 
         // Trường hợp 1: Ẩn danh mục (từ true -> false)
         if (category.isStatus() && !categoryDTO.isStatus()) {
             List<Painting> paintingsToUpdate = paintingRepository.findByCategoryId(id);
             for (Painting painting : paintingsToUpdate) {
-                // Chỉ ảnh hưởng đến các tranh đang bán
+                // Chỉ đổi status của tranh "Đang bán" sang "Dừng bán".
+                // Tranh "Đã bán" (SOLD) sẽ được giữ nguyên.
                 if (painting.getStatus() == PaintingStatus.FOR_SALE) {
                     painting.setStatus(PaintingStatus.NOT_FOR_SALE);
                 }
@@ -61,8 +62,8 @@ public class CategoryService {
         else if (!category.isStatus() && categoryDTO.isStatus()) {
             List<Painting> paintingsToUpdate = paintingRepository.findByCategoryId(id);
             for (Painting painting : paintingsToUpdate) {
-                // Chỉ chuyển lại trạng thái cho các tranh đang "Dừng bán".
-                // Các tranh đã "Đã bán" (SOLD) sẽ không bị ảnh hưởng.
+                // Chỉ đổi status của tranh "Dừng bán" sang "Đang bán".
+                // Tranh "Đã bán" (SOLD) sẽ được giữ nguyên.
                 if (painting.getStatus() == PaintingStatus.NOT_FOR_SALE) {
                     painting.setStatus(PaintingStatus.FOR_SALE);
                 }
@@ -70,7 +71,7 @@ public class CategoryService {
             paintingRepository.saveAll(paintingsToUpdate);
         }
         
-        // --- KẾT THÚC LOGIC CẬP NHẬT TRẠNG THÁI TRANH ---
+        // --- KẾT THÚC LOGIC CẬP NHẬT ---
 
         // Cập nhật thông tin của chính danh mục đó
         category.setName(categoryDTO.getName());
@@ -82,7 +83,6 @@ public class CategoryService {
     
     public void deleteCategory(Long id) {
         Category category = findCategoryById(id);
-        // Cần thêm logic kiểm tra xem danh mục có tranh nào không trước khi xóa
         if (paintingRepository.countByCategoryId(id) > 0) {
             throw new IllegalStateException("Không thể xóa danh mục đang có chứa tranh.");
         }

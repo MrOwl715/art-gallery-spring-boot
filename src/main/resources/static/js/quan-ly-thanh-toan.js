@@ -1,123 +1,188 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // --- Lấy các phần tử DOM ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
-    const configPaymentModalEl = document.getElementById('configPaymentModal');
-    const configPaymentModal = new bootstrap.Modal(configPaymentModalEl);
+    // --- CẤU HÌNH API ---
+    const API_BASE_URL = '/api';
+    const token = localStorage.getItem('accessToken');
 
-    // --- Cấu trúc form động ---
-    const formTemplates = {
-        'QR Ngân hàng': `
-            <div class="mb-3">
-                <label class="form-label">Tên chủ tài khoản</label>
-                <input type="text" id="bank-account-name" class="form-control" value="TRAN MINH ADMIN">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Số tài khoản</label>
-                <input type="number" id="bank-account-number" class="form-control" value="0987654321">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Ngân hàng</label>
-                <select class="form-select" id="bank-select">
-                    <option value="970415" selected>VietinBank</option>
-                    <option value="970436">Vietcombank</option>
-                    <option value="970407">Techcombank</option>
-                    <option value="970422">MB Bank</option>
-                </select>
-            </div>
-            <hr>
-            <p class="text-center text-muted small">Xem trước mã QR được tạo tự động</p>
-            <div class="text-center">
-                <img id="bank-qr-preview" src="" class="img-fluid rounded border" style="max-width: 200px;" alt="QR Preview">
-            </div>
-        `,
-        'Ví Momo': `
-            <div class="mb-3">
-                <label class="form-label">Số điện thoại/Tên người nhận</label>
-                <input type="text" class="form-control" value="TRAN MINH ADMIN">
-            </div>
-            <p class="text-muted small">Vui lòng tải lên ảnh mã QR nhận tiền từ ứng dụng Momo của bạn.</p>
-            <label class="form-label">Ảnh mã QR</label>
-            <label class="image-upload-box" for="momo-qr-input">
-                <span class="upload-text">Nhấn để tải ảnh lên</span>
-                <img src="" class="image-preview" alt="Image preview">
-                <input type="file" id="momo-qr-input" class="image-upload-input" accept="image/*">
-            </label>
-        `,
-        'Ví ZaloPay': `
-             <div class="mb-3">
-                <label class="form-label">Số điện thoại/Tên người nhận</label>
-                <input type="text" class="form-control" value="TRAN MINH ADMIN">
-            </div>
-            <p class="text-muted small">Vui lòng tải lên ảnh mã QR nhận tiền từ ứng dụng ZaloPay của bạn.</p>
-            <label class="form-label">Ảnh mã QR</label>
-            <label class="image-upload-box" for="zalopay-qr-input">
-                <span class="upload-text">Nhấn để tải ảnh lên</span>
-                <img src="" class="image-preview" alt="Image preview">
-                <input type="file" id="zalopay-qr-input" class="image-upload-input" accept="image/*">
-            </label>
-        `
-    };
+    // --- LẤY CÁC PHẦN TỬ DOM ---
+    const tableBody = document.getElementById('payment-methods-table-body');
+    const addModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
+    
+    const addForm = document.getElementById('add-payment-form');
+    const saveAddBtn = document.querySelector('#addPaymentModal .btn-primary');
+    
+    const saveEditBtn = document.querySelector('#editPaymentModal .btn-primary');
 
-    // --- Hàm xử lý ---
-    function updateBankQrPreview() {
-        const accountName = document.getElementById('bank-account-name').value;
-        const accountNumber = document.getElementById('bank-account-number').value;
-        const bankId = document.getElementById('bank-select').value;
-        const qrPreviewImg = document.getElementById('bank-qr-preview');
-        
-        if (accountNumber && bankId) {
-            qrPreviewImg.src = `https://api.vietqr.io/image/${bankId}-${accountNumber}-print.png?accountName=${encodeURIComponent(accountName)}`;
-        } else {
-            qrPreviewImg.src = '';
+    // --- HÀM GỌI API CHUNG ---
+    async function fetchApi(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+        });
+        if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Có lỗi xảy ra');
         }
+        if (response.status === 204) return null;
+        return response.json();
     }
 
-    function setupImageUpload(inputEl) {
-        const uploadBox = inputEl.closest('.image-upload-box');
-        const imagePreview = uploadBox.querySelector('.image-preview');
-        const uploadText = uploadBox.querySelector('.upload-text');
-        inputEl.addEventListener('change', function () {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                    if (uploadText) uploadText.style.display = 'none';
-                }
-                reader.readAsDataURL(file);
-            }
+    // --- HÀM MỚI: UPLOAD FILE ---
+    async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Khi gửi FormData, trình duyệt sẽ tự động đặt Content-Type là multipart/form-data
+    // nên chúng ta không cần khai báo nó trong headers.
+    const response = await fetch(`${API_BASE_URL}/files/upload/qr`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+            // Xóa dòng 'Content-Type': 'application/json'
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        throw new Error('Upload file thất bại.');
+    }
+    const result = await response.json();
+    return result.filePath; // Trả về đường dẫn file trên server
+}
+
+
+    // --- HÀM TIỆN ÍCH & RENDER ---
+    const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Hoạt động' : 'Tạm ẩn'}</span>`;
+
+    function renderMethods(methods) {
+        tableBody.innerHTML = '';
+        if (!methods || methods.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">Chưa có phương thức thanh toán nào</td></tr>';
+            return;
+        }
+        methods.forEach((method, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <th scope="row">${index + 1}</th>
+                <td><div class="fw-bold">${method.method}</div></td>
+                <td>${method.description || ''}</td>
+                <td>${method.accountNumber || ''}</td>
+                <td class="text-center">${getStatusBadge(method.status)}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${method.id}" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${method.id}" title="Xóa"><i class="bi bi-trash"></i></button>
+                </td>
+            `;
+            tableBody.appendChild(row);
         });
     }
-
-    // --- Gắn các sự kiện ---
-    sidebarToggleBtn.addEventListener('click', () => {
-        mainContainer.classList.toggle('sidebar-collapsed');
-    });
-
-    // Lắng nghe sự kiện "show.bs.modal" để chuẩn bị nội dung cho modal cấu hình
-    configPaymentModalEl.addEventListener('show.bs.modal', function(event) {
-        const configBtn = event.relatedTarget;
-        const methodName = configBtn.dataset.method;
-        
-        document.getElementById('config-modal-title').textContent = methodName;
-        const modalBody = document.getElementById('config-modal-body');
-        modalBody.innerHTML = formTemplates[methodName] || '<p>Không có tùy chọn cấu hình cho phương thức này.</p>';
-
-        if (methodName === 'QR Ngân hàng') {
-            updateBankQrPreview(); // Cập nhật QR lần đầu
-            // Thêm sự kiện để cập nhật QR khi người dùng thay đổi thông tin
-            modalBody.querySelector('#bank-account-name').addEventListener('input', updateBankQrPreview);
-            modalBody.querySelector('#bank-account-number').addEventListener('input', updateBankQrPreview);
-            modalBody.querySelector('#bank-select').addEventListener('change', updateBankQrPreview);
-        } else if (methodName === 'Ví Momo' || methodName === 'Ví ZaloPay') {
-            const inputEl = modalBody.querySelector('.image-upload-input');
-            if (inputEl) {
-                setupImageUpload(inputEl);
-            }
+    
+    // --- HÀM TẢI DỮ LIỆU ---
+    async function loadMethods() {
+        try {
+            const methods = await fetchApi('/payment-methods');
+            renderMethods(methods);
+        } catch (error) {
+            console.error("Lỗi tải danh sách:", error);
+            alert(error.message);
         }
+    }
+
+    // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
+    async function handleAdd(event) {
+        event.preventDefault();
+        const fileInput = document.getElementById('add-method-qr-file');
+        let qrCodeImageUrl = '';
+
+        try {
+            if (fileInput.files.length > 0) {
+                qrCodeImageUrl = await uploadFile(fileInput.files[0]);
+            }
+
+            const data = {
+                method: document.getElementById('add-method-name').value,
+                description: document.getElementById('add-method-desc').value,
+                accountNumber: document.getElementById('add-method-account').value,
+                qrCodeImageUrl: qrCodeImageUrl,
+                status: true
+            };
+            
+            await fetchApi('/payment-methods', { method: 'POST', body: JSON.stringify(data) });
+            addModal.hide();
+            addForm.reset();
+            loadMethods();
+        } catch (error) {
+            alert(`Thêm thất bại: ${error.message}`);
+        }
+    }
+
+    async function handleEditClick(methodId) {
+        try {
+            const method = await fetchApi(`/payment-methods/${methodId}`);
+            document.getElementById('edit-method-id').value = method.id;
+            document.getElementById('edit-method-name').value = method.method;
+            document.getElementById('edit-method-desc').value = method.description;
+            document.getElementById('edit-method-account').value = method.accountNumber;
+            document.getElementById('edit-method-qr-url').value = method.qrCodeImageUrl || '';
+            document.getElementById('edit-method-status').value = method.status.toString();
+            editModal.show();
+        } catch (error) {
+            alert(`Lỗi: ${error.message}`);
+        }
+    }
+    
+    async function handleUpdate(event) {
+        event.preventDefault();
+        const methodId = document.getElementById('edit-method-id').value;
+        let qrCodeImageUrl = document.getElementById('edit-method-qr-url').value;
+        const fileInput = document.getElementById('edit-method-qr-file');
+
+        try {
+            if (fileInput.files.length > 0) {
+                qrCodeImageUrl = await uploadFile(fileInput.files[0]);
+            }
+
+            const data = {
+                method: document.getElementById('edit-method-name').value,
+                description: document.getElementById('edit-method-desc').value,
+                accountNumber: document.getElementById('edit-method-account').value,
+                qrCodeImageUrl: qrCodeImageUrl,
+                status: document.getElementById('edit-method-status').value === 'true'
+            };
+
+            await fetchApi(`/payment-methods/${methodId}`, { method: 'PUT', body: JSON.stringify(data) });
+            editModal.hide();
+            loadMethods();
+        } catch (error) {
+            alert(`Cập nhật thất bại: ${error.message}`);
+        }
+    }
+
+    async function handleDeleteClick(methodId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa phương thức này?')) return;
+        try {
+            await fetchApi(`/payment-methods/${methodId}`, { method: 'DELETE' });
+            loadMethods();
+        } catch (error) {
+             alert(`Xóa thất bại: ${error.message}`);
+        }
+    }
+
+    // --- GẮN CÁC SỰ KIỆN ---
+    saveAddBtn.addEventListener('click', handleAdd);
+    saveEditBtn.addEventListener('click', handleUpdate);
+
+    tableBody.addEventListener('click', function(event) {
+        const editBtn = event.target.closest('.edit-btn');
+        if (editBtn) handleEditClick(editBtn.dataset.id);
+
+        const deleteBtn = event.target.closest('.delete-btn');
+        if (deleteBtn) handleDeleteClick(deleteBtn.dataset.id);
     });
+    
+    // --- KHỞI CHẠY ---
+    loadMethods();
 });

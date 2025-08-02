@@ -77,11 +77,7 @@
                          </div>
                          <div class="col-md-6">
                             <label class="form-label">Ngày nhập</label>
-                            <input type="date" class="form-control" id="import-date">
-                         </div>
-                         <div class="col-12">
-                             <label class="form-label">Ghi chú phiếu nhập</label>
-                             <textarea class="form-control" rows="2" placeholder="Thêm ghi chú nếu cần..."></textarea>
+                            <input type="date" class="form-control" id="import-date" readonly>
                          </div>
                      </div>
                  </div>
@@ -96,8 +92,7 @@
                 </div>
                 <div class="card-body">
                     <div id="import-slip-items" class="table-responsive">
-                         <div class="text-center text-muted mt-3"><p>Chưa có sản phẩm nào được thêm vào phiếu.</p></div>
-                    </div>
+                         </div>
                 </div>
                 <div class="card-footer bg-white d-flex justify-content-end align-items-center">
                     <span class="me-3">Tổng giá trị nhập:</span>
@@ -106,7 +101,8 @@
              </div>
 
              <div class="text-end mt-4">
-                 <button class="btn btn-success btn-lg" id="review-import-btn"><i class="bi bi-send-check me-2"></i>Xem lại và Xác nhận</button>
+                 <button class="btn btn-success btn-lg" id="review-import-btn">
+                    <i class="bi bi-send-check me-2"></i>Xem lại và Xác nhận</button>
              </div>
         </main>
     </div>
@@ -117,20 +113,20 @@
                 <div class="modal-header"><h5 class="modal-title">Thêm Sản phẩm mới vào Phiếu nhập</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <form id="add-painting-form" class="row g-3">
-                        <div class="col-md-7">
-                            <div class="row g-3">
-                                <div class="col-12"><label class="form-label">Tên tranh</label><input type="text" id="add-name" class="form-control" required></div>
-                                <div class="col-12"><label class="form-label">Họa sĩ</label><select class="form-select" id="add-artist-select" disabled></select></div>
-                                <div class="col-md-6"><label class="form-label">Giá nhập (VND)</label><input type="number" id="add-import-price" class="form-control" required></div>
-                                <div class="col-md-6"><label class="form-label">Giá bán dự kiến</label><input type="number" id="add-sell-price" class="form-control"></div>
-                            </div>
-                        </div>
-                        <div class="col-md-5"><label class="form-label">Ảnh minh họa</label><label class="image-upload-box" for="add-image-input"><span class="upload-text">Tải ảnh lên</span><img src="" class="image-preview" alt="Preview"><input type="file" id="add-image-input" accept="image/*"></label></div>
-                        <div class="col-md-6"><label class="form-label">Thể loại</label><select class="form-select" id="add-category-select"></select></div>
-                        <div class="col-md-6"><label class="form-label">Chất liệu</label><select class="form-select" id="add-material-select"></select></div>
+                        <div class="col-12"><label for="add-name" class="form-label">Tên tranh</label><input type="text" id="add-name" class="form-control" required></div>
+                        <div class="col-md-6"><label for="add-import-price" class="form-label">Giá nhập (VND)</label><input type="number" id="add-import-price" class="form-control" required></div>
+                        <div class="col-md-6"><label for="add-selling-price" class="form-label">Giá bán (VND)</label><input type="number" id="add-selling-price" class="form-control" required></div>
+                        <div class="col-md-6"><label for="add-category-select" class="form-label">Thể loại</label><select class="form-select" id="add-category-select" required></select></div>
+                        <div class="col-md-6"><label for="add-material" class="form-label">Chất liệu</label><input type="text" id="add-material" class="form-control"></div>
+                        <div class="col-md-6"><label for="add-size" class="form-label">Kích thước</label><input type="text" id="add-size" class="form-control"></div>
+                        <div class="col-md-6"><label for="add-image-url" class="form-label">URL Hình ảnh</label><input type="text" id="add-image-url" class="form-control"></div>
+                        <div class="col-12"><label for="add-description" class="form-label">Mô tả</label><textarea id="add-description" class="form-control" rows="2"></textarea></div>
                     </form>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="button" class="btn btn-primary" id="confirm-add-painting-btn">Thêm vào phiếu</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="confirm-add-painting-btn">Thêm vào phiếu</button>
+                </div>
             </div>
         </div>
     </div>
@@ -139,11 +135,10 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">Xác nhận thông tin Phiếu nhập</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body" id="final-confirm-summary">
-                    </div>
+                <div class="modal-body" id="final-confirm-summary"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chỉnh sửa lại</button>
-                    <button type="button" class="btn btn-success" id="final-confirm-and-print-btn">Xác nhận và In Phiếu</button>
+                    <button type="button" class="btn btn-success" id="final-confirm-and-print-btn">Xác nhận</button>
                 </div>
             </div>
         </div>

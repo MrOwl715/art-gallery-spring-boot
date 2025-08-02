@@ -1,0 +1,57 @@
+1. Artist
+// {
+//     "name": "Vincent van Gogh",
+//     "biography": "Là một họa sĩ người Hà Lan thuộc trường phái hậu ấn tượng.",
+//     "phone": "0123456789",
+//     "email": "vincent@example.com",
+//     "address": "Zundert, Hà Lan",
+//     "status": true
+// }
+
+// {
+//     "name": "Trần Hồng Châu",
+//     "biography": "Là một họa sĩ người Việt Nam đương đại nổi tiếng với các tác phẩm sơn mài truyền thống và tranh lụa.",
+//     "phone": "0912345678",
+//     "email": "chau.tran@example.com",
+//     "status": true
+// }
+
+2.painting
+// {
+//     "name": "Đêm Đầy Sao2",
+//     "description": "Bức tranh sơn dầu nổi tiếng của Van Gogh.",
+//     "price": 25000.00,
+//     "imageUrl": "https://example.com/starry_night.jpg",
+//     "quantity": 5,
+//     "material": "Sơn dầu trên vải",
+//     "size": "74cm x 92cm",
+//     "status": true,
+//     "artistId": 3,
+//     "categoryId": 1
+// }
+
+// {
+//     "name": "Phố Cổ Hà Nội",
+//     "description": "Một trong những tác phẩm tiêu biểu của Bùi Xuân Phái, thể hiện vẻ đẹp và nét đặc trưng của phố cổ Hà Nội.",
+//     "price": 50000.00,
+//     "imageUrl": "https://images.baodantoc.vn/uploads/2021/Th%C3%A1ng%208/Ng%C3%A0y%206/%C3%81nh/Ph%E1%BB%91_Ch%E1%BB%A3_G%E1%BA%A1o.jpg", 
+//     "quantity": 1,
+//     "material": "Sơn dầu trên vải",
+//     "size": "60cm x 80cm",
+//     "status": true,
+//     "artistId": 5, 
+//     "categoryId": 1
+// }
+
+// {
+//     "name": "Nét Xuân",
+//     "description": "Bức tranh sơn mài với gam màu tươi sáng, khắc họa vẻ đẹp truyền thống và đương đại.",
+//     "price": 15000.00,
+//     "imageUrl": "https://tse3.mm.bing.net/th/id/OIP.zWzWVe8vitSW3S4KcZqxwQHaEm?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
+//     "quantity": 3,
+//     "material": "Sơn mài",
+//     "size": "90cm x 120cm",
+//     "status": true,
+//     "artistId": 4,
+//     "categoryId": 3
+// }

@@ -1,101 +1,175 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // --- CSDL MẪU ---
-    const sampleCustomers = [
-        { id: 'KH001', name: 'Anh Nam', phone: '0987654321', email: 'anhnam@email.com', address: '123 Đường Láng, Đống Đa, Hà Nội', status: 'Hoạt động' },
-        { id: 'KH002', name: 'Chị Lan', phone: '0912345678', email: 'chilan@email.com', address: '45 Hai Bà Trưng, Hoàn Kiếm, Hà Nội', status: 'Hoạt động' },
-        { id: 'KH003', name: 'Anh Tuấn', phone: '0934567890', email: 'anhtuan@email.com', address: '78 Cầu Giấy, Cầu Giấy, Hà Nội', status: 'Dừng hoạt động' },
-    ];
-    const samplePurchaseHistory = {
-        'KH001': [{ id: 'DH001', date: '25-06-2025', total: 450000000, status: 'Hoàn thành' }],
-        'KH002': [{ id: 'DH002', date: '26-06-2025', total: 106000000, status: 'Đang xử lý' }]
-    };
+    // --- CẤU HÌNH API ---
+    const API_BASE_URL = '/api';
+    const token = localStorage.getItem('accessToken');
 
-    // --- Lấy các phần tử DOM ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
+    // --- BIẾN LƯU TRỮ ---
+    let allCustomers = [];
+
+    // --- LẤY CÁC PHẦN TỬ DOM ---
     const customersTableBody = document.getElementById('customers-table-body');
+    const addCustomerModal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
     const editCustomerModal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
-    const purchaseHistoryModal = new bootstrap.Modal(document.getElementById('purchaseHistoryModal'));
+    
+    const saveAddBtn = document.querySelector('#addCustomerModal .btn-primary');
+    const saveEditBtn = document.querySelector('#editCustomerModal .btn-primary');
+    
+    // DOM cho Tìm kiếm & Lọc
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const searchBtn = document.getElementById('search-btn');
 
-    // --- Hàm tiện ích ---
-    const getStatusBadge = (status, type = 'customer') => {
-        let badgeClass = '';
-        if (type === 'customer') {
-            badgeClass = status === 'Hoạt động' ? 'bg-success' : 'bg-secondary';
-        } else { // For order status
-            const statusMap = {'Hoàn thành': 'bg-success', 'Đang xử lý': 'bg-info', 'Chờ xác nhận': 'bg-warning text-dark', 'Đã hủy': 'bg-danger'};
-            badgeClass = statusMap[status] || 'bg-secondary';
+    // --- HÀM GỌI API CHUNG ---
+    async function fetchApi(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+        });
+        if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Có lỗi xảy ra');
         }
-        return `<span class="badge ${badgeClass}">${status}</span>`;
-    };
-    const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        if (response.status === 204) return null;
+        return response.json();
+    }
 
-    // --- Hàm Render ---
+    // --- HÀM TIỆN ÍCH ---
+    const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Hoạt động' : 'Tạm ẩn'}</span>`;
+
+    // --- HÀM RENDER ---
     function renderCustomers(customers) {
         customersTableBody.innerHTML = '';
         if (!customers || customers.length === 0) {
-            customersTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-5">Không có khách hàng nào</td></tr>'; return;
+            customersTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-5">Không tìm thấy khách hàng nào</td></tr>';
+            return;
         }
         customers.forEach(customer => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td><div class="fw-bold">${customer.name}</div><div class="small text-muted">${customer.id}</div></td>
+                <td><div class="fw-bold">${customer.name}</div></td>
                 <td><div><i class="bi bi-phone me-2"></i>${customer.phone || ''}</div><div><i class="bi bi-envelope me-2"></i>${customer.email || ''}</div></td>
                 <td>${customer.address || 'Chưa có'}</td>
                 <td class="text-center">${getStatusBadge(customer.status)}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${customer.id}" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary history-btn" data-id="${customer.id}" title="Lịch sử mua hàng"><i class="bi bi-clock-history"></i></button>
                 </td>
             `;
             customersTableBody.appendChild(row);
         });
     }
 
-    // --- Hàm xử lý Logic & Modal ---
-    function handleEditClick(customerId) {
-        const customer = sampleCustomers.find(c => c.id === customerId);
-        if (!customer) return;
-        document.getElementById('edit-customer-id').value = customer.id;
-        document.getElementById('edit-customer-name').value = customer.name;
-        document.getElementById('edit-customer-phone').value = customer.phone;
-        document.getElementById('edit-customer-email').value = customer.email;
-        document.getElementById('edit-customer-address').value = customer.address;
-        document.getElementById('edit-customer-status').value = customer.status;
-        editCustomerModal.show();
-    }
+    // --- HÀM LỌC VÀ TÌM KIẾM ---
+    function filterAndRenderCustomers() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const statusValue = statusFilter.value;
 
-    function handleHistoryClick(customerId) {
-        const customer = sampleCustomers.find(c => c.id === customerId);
-        const history = samplePurchaseHistory[customerId] || [];
-        if (!customer) return;
-        document.getElementById('history-customer-name').textContent = customer.name;
-        const historyBody = document.getElementById('history-table-body');
-        historyBody.innerHTML = '';
-        if (history.length === 0) {
-            historyBody.innerHTML = '<tr><td colspan="4" class="text-center">Chưa có lịch sử mua hàng.</td></tr>';
-        } else {
-            history.forEach(order => {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>#${order.id}</td><td>${order.date}</td><td class="text-end">${formatCurrency(order.total)}</td><td class="text-center">${getStatusBadge(order.status, 'order')}</td>`;
-                historyBody.appendChild(row);
-            });
+        let filteredCustomers = allCustomers;
+
+        if (statusValue !== 'all') {
+            const isActive = (statusValue === 'true');
+            filteredCustomers = filteredCustomers.filter(c => c.status === isActive);
         }
-        purchaseHistoryModal.show();
+
+        if (searchTerm) {
+            filteredCustomers = filteredCustomers.filter(c => 
+                c.name.toLowerCase().includes(searchTerm) ||
+                (c.phone && c.phone.includes(searchTerm)) ||
+                (c.email && c.email.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        renderCustomers(filteredCustomers);
     }
 
-    // --- Gắn các sự kiện ---
-    sidebarToggleBtn.addEventListener('click', () => mainContainer.classList.toggle('sidebar-collapsed'));
+    // --- HÀM TẢI DỮ LIỆU ---
+    async function loadCustomers() {
+        try {
+            allCustomers = await fetchApi('/customers');
+            filterAndRenderCustomers();
+        } catch (error) {
+            alert(`Lỗi tải danh sách khách hàng: ${error.message}`);
+        }
+    }
+
+    // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
+    async function handleAddCustomer(event) {
+        event.preventDefault();
+        const customerData = {
+            name: document.getElementById('add-customer-name').value,
+            phone: document.getElementById('add-customer-phone').value,
+            email: document.getElementById('add-customer-email').value,
+            address: document.getElementById('add-customer-address').value,
+            status: true
+        };
+
+        try {
+            await fetchApi('/customers', { method: 'POST', body: JSON.stringify(customerData) });
+            addCustomerModal.hide();
+            document.getElementById('add-customer-form').reset();
+            loadCustomers();
+        } catch (error) {
+            alert(`Thêm thất bại: ${error.message}`);
+        }
+    }
+
+    async function handleEditClick(customerId) {
+        try {
+            const customer = await fetchApi(`/customers/${customerId}`);
+            document.getElementById('edit-customer-id').value = customer.id;
+            document.getElementById('edit-customer-name').value = customer.name;
+            document.getElementById('edit-customer-phone').value = customer.phone;
+            document.getElementById('edit-customer-email').value = customer.email;
+            document.getElementById('edit-customer-address').value = customer.address;
+            document.getElementById('edit-customer-status').value = customer.status.toString();
+            editCustomerModal.show();
+        } catch (error) {
+            alert(`Lỗi: ${error.message}`);
+        }
+    }
+    
+    async function handleUpdateCustomer(event) {
+        event.preventDefault();
+        const customerId = document.getElementById('edit-customer-id').value;
+        const customerData = {
+            name: document.getElementById('edit-customer-name').value,
+            phone: document.getElementById('edit-customer-phone').value,
+            email: document.getElementById('edit-customer-email').value,
+            address: document.getElementById('edit-customer-address').value,
+            status: document.getElementById('edit-customer-status').value === 'true'
+        };
+
+        try {
+            await fetchApi(`/customers/${customerId}`, { method: 'PUT', body: JSON.stringify(customerData) });
+            editCustomerModal.hide();
+            loadCustomers();
+        } catch (error) {
+            alert(`Cập nhật thất bại: ${error.message}`);
+        }
+    }
+
+    // --- GẮN CÁC SỰ KIỆN ---
+    saveAddBtn.addEventListener('click', handleAddCustomer);
+    saveEditBtn.addEventListener('click', handleUpdateCustomer);
 
     customersTableBody.addEventListener('click', function(event) {
         const editBtn = event.target.closest('.edit-btn');
-        const historyBtn = event.target.closest('.history-btn');
-        if (editBtn) { handleEditClick(editBtn.dataset.id); }
-        if (historyBtn) { handleHistoryClick(historyBtn.dataset.id); }
+        if (editBtn) handleEditClick(editBtn.dataset.id);
     });
+    
+    searchBtn.addEventListener('click', filterAndRenderCustomers);
+    statusFilter.addEventListener('change', filterAndRenderCustomers);
+    searchInput.addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') filterAndRenderCustomers();
+    });
+    
+    const editStatusSelect = document.getElementById('edit-customer-status');
+    if (editStatusSelect) {
+        editStatusSelect.innerHTML = `<option value="true">Hoạt động</option><option value="false">Tạm ẩn</option>`;
+    }
 
-    // --- Khởi chạy ---
-    renderCustomers(sampleCustomers);
+    // --- KHỞI CHẠY ---
+    loadCustomers();
 });

@@ -26,4 +26,7 @@ public class PaymentMethod {
     // true = đang hoạt động, false = đã ẩn/không dùng
     @Column(nullable = false)
     private boolean status;
+
+    @Column(name = "qr_code_image_url")
+    private String qrCodeImageUrl;
 }

@@ -11,5 +11,6 @@ public class CategoryDTO {
     private String name;
 
     private String description;
+    private int paintingCount;
     private boolean status;
 }

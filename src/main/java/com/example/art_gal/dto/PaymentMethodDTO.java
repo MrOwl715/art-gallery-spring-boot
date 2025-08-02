@@ -13,4 +13,6 @@ public class PaymentMethodDTO {
     private String description;
     private String accountNumber;
     private boolean status;
+
+     private String qrCodeImageUrl;
 }

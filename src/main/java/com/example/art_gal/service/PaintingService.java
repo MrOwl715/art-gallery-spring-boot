@@ -10,6 +10,7 @@ import com.example.art_gal.repository.CategoryRepository;
 import com.example.art_gal.repository.PaintingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,43 +18,41 @@ import java.util.stream.Collectors;
 @Service
 public class PaintingService {
 
-    @Autowired
-    private PaintingRepository paintingRepository;
+    @Autowired private PaintingRepository paintingRepository;
+    @Autowired private ArtistRepository artistRepository;
+    @Autowired private CategoryRepository categoryRepository;
+    @Autowired private ActivityLogService activityLogService;
 
-    @Autowired
-    private ArtistRepository artistRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    // Tạo tranh mới
-    public PaintingDTO createPainting(PaintingDTO paintingDTO) {
-        Artist artist = artistRepository.findById(paintingDTO.getArtistId())
-                .orElseThrow(() -> new ResourceNotFoundException("Artist not found with id: " + paintingDTO.getArtistId()));
-
-        Category category = categoryRepository.findById(paintingDTO.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + paintingDTO.getCategoryId()));
-
-        Painting painting = convertToEntity(paintingDTO, artist, category);
-        Painting savedPainting = paintingRepository.save(painting);
-        return convertToDTO(savedPainting);
+    public List<PaintingDTO> getAllPaintings() {
+        return paintingRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    // Cập nhật tranh
+    public PaintingDTO getPaintingById(Long id) {
+        Painting painting = findPaintingById(id);
+        return convertToDTO(painting);
+    }
+
+    @Transactional
     public PaintingDTO updatePainting(Long id, PaintingDTO paintingDTO) {
+        // Yêu cầu: Check giá bán phải cao hơn giá nhập
+        if (paintingDTO.getSellingPrice().compareTo(paintingDTO.getImportPrice()) <= 0) {
+            throw new IllegalArgumentException("Giá bán phải cao hơn giá nhập.");
+        }
+
         Painting paintingToUpdate = findPaintingById(id);
 
         Artist artist = artistRepository.findById(paintingDTO.getArtistId())
                 .orElseThrow(() -> new ResourceNotFoundException("Artist not found with id: " + paintingDTO.getArtistId()));
-
         Category category = categoryRepository.findById(paintingDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + paintingDTO.getCategoryId()));
 
         paintingToUpdate.setName(paintingDTO.getName());
         paintingToUpdate.setDescription(paintingDTO.getDescription());
-        paintingToUpdate.setPrice(paintingDTO.getPrice());
+        paintingToUpdate.setImportPrice(paintingDTO.getImportPrice()); // Cập nhật
+        paintingToUpdate.setSellingPrice(paintingDTO.getSellingPrice()); // Cập nhật
         paintingToUpdate.setImageUrl(paintingDTO.getImageUrl());
-        paintingToUpdate.setQuantity(paintingDTO.getQuantity());
         paintingToUpdate.setMaterial(paintingDTO.getMaterial());
         paintingToUpdate.setSize(paintingDTO.getSize());
         paintingToUpdate.setStatus(paintingDTO.isStatus());
@@ -61,65 +60,38 @@ public class PaintingService {
         paintingToUpdate.setCategory(category);
 
         Painting updatedPainting = paintingRepository.save(paintingToUpdate);
+        
+        activityLogService.logActivity("CẬP NHẬT TRANH", "Đã cập nhật thông tin cho tranh #" + updatedPainting.getId() + " - " + updatedPainting.getName());
+        
         return convertToDTO(updatedPainting);
     }
-
-    // Lấy tất cả tranh
-    public List<PaintingDTO> getAllPaintings() {
-        return paintingRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    // Lấy tranh theo ID
-    public PaintingDTO getPaintingById(Long id) {
-        Painting painting = findPaintingById(id);
-        return convertToDTO(painting);
-    }
-
-    // Xóa tranh
-    public void deletePainting(Long id) {
-        Painting painting = findPaintingById(id);
-        paintingRepository.delete(painting);
-    }
-
-    // --- Các phương thức private hỗ trợ ---
+    
+    // Chức năng tạo tranh riêng lẻ đã được chuyển sang ImportSlipService
+    // Chức năng xóa tranh có thể được thêm vào sau nếu cần
 
     private Painting findPaintingById(Long id) {
         return paintingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Painting not found with id: " + id));
     }
 
-    // Chuyển từ Entity sang DTO
     private PaintingDTO convertToDTO(Painting painting) {
         PaintingDTO dto = new PaintingDTO();
         dto.setId(painting.getId());
         dto.setName(painting.getName());
         dto.setDescription(painting.getDescription());
-        dto.setPrice(painting.getPrice());
+        dto.setImportPrice(painting.getImportPrice()); // Cập nhật
+        dto.setSellingPrice(painting.getSellingPrice()); // Cập nhật
         dto.setImageUrl(painting.getImageUrl());
         dto.setQuantity(painting.getQuantity());
         dto.setMaterial(painting.getMaterial());
         dto.setSize(painting.getSize());
         dto.setStatus(painting.isStatus());
-        dto.setArtistId(painting.getArtist().getId());
-        dto.setCategoryId(painting.getCategory().getId());
+        if (painting.getArtist() != null) {
+            dto.setArtistId(painting.getArtist().getId());
+        }
+        if (painting.getCategory() != null) {
+            dto.setCategoryId(painting.getCategory().getId());
+        }
         return dto;
-    }
-
-    // Chuyển từ DTO sang Entity
-    private Painting convertToEntity(PaintingDTO dto, Artist artist, Category category) {
-        Painting painting = new Painting();
-        painting.setName(dto.getName());
-        painting.setDescription(dto.getDescription());
-        painting.setPrice(dto.getPrice());
-        painting.setImageUrl(dto.getImageUrl());
-        painting.setQuantity(dto.getQuantity());
-        painting.setMaterial(dto.getMaterial());
-        painting.setSize(dto.getSize());
-        painting.setStatus(dto.isStatus());
-        painting.setArtist(artist);
-        painting.setCategory(category);
-        return painting;
     }
 }

@@ -19,10 +19,10 @@ public class Artist {
     @Column(columnDefinition = "TEXT")
     private String biography;
 
-    @Column(unique = true)
+    @Column
     private String phone; // Thêm mới
 
-    @Column(unique = true)
+    @Column
     private String email; // Thêm mới
 
     private String address; // Thêm mới

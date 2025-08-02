@@ -1,53 +1,51 @@
 document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
 
-    // --- CSDL MẪU (Sẽ được thay bằng API thật) ---
-    const sampleOrders = [
-        {
-            id: 'DH001', customer: 'Anh Nam', employee: 'Admin', date: '25-06-2025', total: 450000000, status: 'Hoàn thành',
-            products: [{ name: 'Phố cổ về đêm', artist: 'Bùi Xuân Phái', price: 450000000 }]
-        },
-        {
-            id: 'DH002', customer: 'Chị Lan', employee: 'Admin', date: '26-06-2025', total: 106000000, status: 'Đang xử lý',
-            products: [
-                { name: 'Chiều hoàng hôn', artist: 'Văn Cao', price: 12000000 },
-                { name: 'Sen hạ', artist: 'Mai Trung Thứ', price: 88000000 }
-            ]
-        },
-        {
-            id: 'DH003', customer: 'Khách lẻ', employee: 'Admin', date: '26-06-2025', total: 25500000, status: 'Chờ xác nhận',
-            products: [{ name: 'Mảnh ghép', artist: 'Bùi Xuân Phái', price: 25500000 }]
-        },
-        {
-            id: 'DH004', customer: 'Anh Tuấn', employee: 'Admin', date: '24-06-2025', total: 32000000, status: 'Đã hủy',
-            products: [{ name: 'Tĩnh vật bên cửa sổ', artist: 'Nguyễn Gia Trí', price: 32000000 }]
-        }
-    ];
-    const TAX_RATE = 0.08;
+    // --- CẤU HÌNH API ---
+    const API_BASE_URL = '/api';
+    const token = localStorage.getItem('accessToken');
 
-    // --- Lấy các phần tử DOM ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
+    // --- BIẾN LƯU TRỮ ---
+    let allExportOrders = [];
+
+    // --- LẤY CÁC PHẦN TỬ DOM ---
     const ordersTableBody = document.getElementById('orders-table-body');
     const orderDetailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+    const saveStatusBtn = document.getElementById('save-status-btn');
     
-    // --- Các hàm tiện ích ---
-    const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    // --- HÀM GỌI API CHUNG ---
+    async function fetchApi(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+        });
+        if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Có lỗi xảy ra');
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
 
+    // --- CÁC HÀM TIỆN ÍCH ---
+    const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    const formatDate = (dateString) => new Date(dateString).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const getStatusBadge = (status) => {
         const statusMap = {
-            'Hoàn thành': 'bg-success',
-            'Đang xử lý': 'bg-info',
-            'Chờ xác nhận': 'bg-warning text-dark',
-            'Đã hủy': 'bg-danger',
+            'COMPLETED': { class: 'bg-success', text: 'Hoàn thành' },
+            'PENDING': { class: 'bg-warning text-dark', text: 'Chờ xử lý' },
+            'CANCELLED': { class: 'bg-danger', text: 'Đã hủy' },
         };
-        return `<span class="badge ${statusMap[status] || 'bg-secondary'}">${status}</span>`;
+        const statusInfo = statusMap[status] || { class: 'bg-secondary', text: 'Không xác định' };
+        return `<span class="badge ${statusInfo.class}">${statusInfo.text}</span>`;
     };
 
-    // --- Các hàm render ---
+    // --- HÀM RENDER ---
     function renderOrders(orders) {
         ordersTableBody.innerHTML = '';
         if (orders.length === 0) {
-            ordersTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">Không có đơn hàng nào</td></tr>';
+            ordersTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">Không có đơn hàng nào</td></tr>';
             return;
         }
 
@@ -55,16 +53,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="fw-bold text-primary">#${order.id}</td>
-                <td>${order.customer}</td>
-                <td>${order.date}</td>
-                <td>${formatCurrency(order.total)}</td>
-                <td>${getStatusBadge(order.status)}</td>
+                <td>${order.customerName || 'N/A'}</td>
+                <td>${order.createdByUsername || 'N/A'}</td>
+                <td>${formatDate(order.orderDate)}</td>
+                <td class="text-end fw-bold">${formatCurrency(order.totalAmount)}</td>
+                <td class="text-center">${getStatusBadge(order.status)}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-secondary view-detail-btn" data-id="${order.id}" title="Xem chi tiết">
                         <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" title="In hóa đơn">
-                        <i class="bi bi-printer"></i>
                     </button>
                 </td>
             `;
@@ -72,61 +68,56 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- Các hàm xử lý logic ---
+    // --- HÀM XỬ LÝ LOGIC ---
     function showOrderDetail(orderId) {
-        const order = sampleOrders.find(o => o.id === orderId);
-        if (!order) return;
-
-        // Populate modal header and basic info
+        const order = allExportOrders.find(o => o.id == orderId);
+        if (!order) { alert('Không tìm thấy đơn hàng!'); return; }
+        
         document.getElementById('modal-order-id').textContent = '#' + order.id;
-        document.getElementById('modal-customer-name').textContent = order.customer;
-        document.getElementById('modal-employee-name').textContent = order.employee;
-        document.getElementById('modal-order-date').textContent = order.date;
+        document.getElementById('modal-customer-name').textContent = order.customerName;
+        document.getElementById('modal-employee-name').textContent = order.createdByUsername;
+        document.getElementById('modal-order-date').textContent = formatDate(order.orderDate);
         document.getElementById('modal-order-status').innerHTML = getStatusBadge(order.status);
         
-        // Populate product list
         const productListEl = document.getElementById('modal-product-list');
         productListEl.innerHTML = '';
-        let subtotal = 0;
-        order.products.forEach(p => {
-            subtotal += p.price;
+        order.orderDetails.forEach(p => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${p.name}</td>
-                <td>${p.artist}</td>
+                <td>${p.paintingName}</td>
+                <td>${p.quantity}</td>
                 <td class="text-end">${formatCurrency(p.price)}</td>
+                <td class="text-end fw-bold">${formatCurrency(p.price * p.quantity)}</td>
             `;
             productListEl.appendChild(row);
         });
 
-        // Populate totals
-        const tax = subtotal * TAX_RATE;
-        document.getElementById('modal-subtotal').textContent = formatCurrency(subtotal);
-        document.getElementById('modal-tax').textContent = formatCurrency(tax);
-        document.getElementById('modal-total').textContent = formatCurrency(subtotal + tax);
-
-        // Set current status in dropdown
+        document.getElementById('modal-total').textContent = formatCurrency(order.totalAmount);
         document.getElementById('update-status-select').value = order.status;
+        saveStatusBtn.dataset.id = order.id;
 
         orderDetailModal.show();
     }
 
-    // --- Gắn các sự kiện ---
-    // Toggle sidebar
-    sidebarToggleBtn.addEventListener('click', () => {
-        mainContainer.classList.toggle('sidebar-collapsed');
-    });
+    // --- HÀM TẢI DỮ LIỆU BAN ĐẦU ---
+    async function loadOrders() {
+        try {
+            allExportOrders = await fetchApi('/export-orders');
+            renderOrders(allExportOrders);
+        } catch (error) {
+            console.error(error);
+            ordersTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-5">Không thể tải dữ liệu đơn hàng.</td></tr>';
+        }
+    }
 
-    // Event delegation for view detail buttons
+    // --- GẮN CÁC SỰ KIỆN ---
     ordersTableBody.addEventListener('click', function(event) {
         const viewBtn = event.target.closest('.view-detail-btn');
         if (viewBtn) {
-            const orderId = viewBtn.dataset.id;
-            showOrderDetail(orderId);
+            showOrderDetail(viewBtn.dataset.id);
         }
     });
 
-    // --- Khởi chạy ---
-    renderOrders(sampleOrders);
-
+    // --- KHỞI CHẠY ---
+    loadOrders();
 });

@@ -35,37 +35,39 @@ public class SecurityConfig {
     }
 
     // @Bean
-    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    //     http
-    //             // 1. Vô hiệu hóa CSRF (Cross-Site Request Forgery) vì chúng ta dùng API
-    //             .csrf(csrf -> csrf.disable())
+    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws
+    // Exception {
+    // http
+    // // 1. Vô hiệu hóa CSRF (Cross-Site Request Forgery) vì chúng ta dùng API
+    // .csrf(csrf -> csrf.disable())
 
-    //             // 2. Cấu hình phân quyền cho các request
-    //             .authorizeHttpRequests(authorize -> authorize
-    //                     // Cho phép tất cả các request đến đường dẫn /api/** mà không cần xác thực
-    //                     .requestMatchers("/api/**").permitAll()
-    //                     // Tất cả các request khác đều cần phải được xác thực
-    //                     .anyRequest().authenticated());
+    // // 2. Cấu hình phân quyền cho các request
+    // .authorizeHttpRequests(authorize -> authorize
+    // // Cho phép tất cả các request đến đường dẫn /api/** mà không cần xác thực
+    // .requestMatchers("/api/**").permitAll()
+    // // Tất cả các request khác đều cần phải được xác thực
+    // .anyRequest().authenticated());
 
-    //     return http.build();
+    // return http.build();
     // }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            // Yêu cầu session phải là STATELESS (không lưu trạng thái)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authorize -> authorize
-                // Cho phép tất cả các request đến /api/auth/**
-                .requestMatchers("/api/auth/**").permitAll()
-                // Tất cả các request khác đều cần phải được xác thực
-                .anyRequest().authenticated()
-            );
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        // .requestMatchers("/quan-ly-tai-khoan.html", "quan-ly-thanh-toan.html").hasRole("MANAGER")
+                        .requestMatchers("/api/files/**").permitAll() 
+                        .requestMatchers("/api/auth/**").permitAll() // Cho phép API đăng nhập/đăng ký
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/dang-nhap.html", "/", "/index.html",
+                                "/*.html")
+                        .permitAll()
+                        .requestMatchers("/api/**").authenticated() // Bắt buộc xác thực cho các API còn lại
 
+                        .anyRequest().authenticated());
         // Thêm một lớp Filter kiểm tra JWT
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 }

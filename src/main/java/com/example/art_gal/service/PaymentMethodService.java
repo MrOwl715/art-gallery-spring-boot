@@ -38,6 +38,7 @@ public class PaymentMethodService {
         entity.setMethod(dto.getMethod());
         entity.setDescription(dto.getDescription());
         entity.setAccountNumber(dto.getAccountNumber());
+        entity.setQrCodeImageUrl(dto.getQrCodeImageUrl());
         entity.setStatus(dto.isStatus());
         PaymentMethod updatedEntity = paymentMethodRepository.save(entity);
         return convertToDTO(updatedEntity);
@@ -59,6 +60,7 @@ public class PaymentMethodService {
         dto.setMethod(entity.getMethod());
         dto.setDescription(entity.getDescription());
         dto.setAccountNumber(entity.getAccountNumber());
+        dto.setQrCodeImageUrl(entity.getQrCodeImageUrl());
         dto.setStatus(entity.isStatus());
         return dto;
     }
@@ -68,6 +70,7 @@ public class PaymentMethodService {
         entity.setMethod(dto.getMethod());
         entity.setDescription(dto.getDescription());
         entity.setAccountNumber(dto.getAccountNumber());
+        entity.setQrCodeImageUrl(dto.getQrCodeImageUrl());
         entity.setStatus(dto.isStatus());
         return entity;
     }

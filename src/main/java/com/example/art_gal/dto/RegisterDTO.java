@@ -16,6 +16,7 @@ public class RegisterDTO {
     @NotBlank
     @Email
     private String email;
+    private String phone;
     @NotBlank
     @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
     private String password;

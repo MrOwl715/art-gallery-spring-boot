@@ -1,123 +1,114 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // --- CSDL MẪU ---
-    const sampleImports = [
-        { 
-            id: 'PN001', artistName: 'Văn Cao', employeeName: 'Admin', date: '2025-06-20', totalValue: 6000000, status: 'Đã hoàn tất', 
-            products: [{ name: 'Chiều hoàng hôn', quantity: 1, price: 6000000 }]
-        },
-        { 
-            id: 'PN002', artistName: 'Bùi Xuân Phái', employeeName: 'Admin', date: '2025-06-22', totalValue: 240000000, status: 'Đã hoàn tất', 
-            products: [
-                { name: 'Mảnh ghép', quantity: 1, price: 12000000 },
-                { name: 'Phố cổ về đêm', quantity: 1, price: 228000000 }
-            ]
-        },
-        { 
-            id: 'PN003', artistName: 'Lê Phổ', employeeName: 'Admin', date: '2025-06-25', totalValue: 90000000, status: 'Đã hủy', 
-            products: [{ name: 'Dòng chảy', quantity: 1, price: 90000000 }]
-        }
-    ];
+    // --- CẤU HÌNH API ---
+    const API_BASE_URL = '/api';
+    const token = localStorage.getItem('accessToken');
 
-    // --- Lấy các phần tử DOM (đã bổ sung) ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
+    let allImportSlips = [];
+
+    // --- LẤY CÁC PHẦN TỬ DOM ---
     const importsTableBody = document.getElementById('imports-table-body');
     const importDetailModal = new bootstrap.Modal(document.getElementById('importDetailModal'));
-    const cancelConfirmModal = new bootstrap.Modal(document.getElementById('cancelConfirmModal')); // Modal mới
 
-    // --- Hàm tiện ích ---
+    // --- HÀM GỌI API CHUNG ---
+    async function fetchApi(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+        });
+        if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Có lỗi xảy ra');
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
+
+    // --- CÁC HÀM TIỆN ÍCH ---
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    const getStatusBadge = (status) => `<span class="badge ${status === 'Đã hoàn tất' ? 'bg-success' : 'bg-secondary'}">${status}</span>`;
+    const formatDate = (dateString) => new Date(dateString).toLocaleDateString('vi-VN');
+    const getStatusBadge = (status) => `<span class="badge ${status === 'COMPLETED' ? 'bg-success' : 'bg-secondary'}">${status === 'COMPLETED' ? 'Đã hoàn tất' : 'Đã hủy'}</span>`;
 
-    // --- Hàm Render (đã cập nhật các nút hành động) ---
+    // --- HÀM RENDER ---
     function renderImports(imports) {
         importsTableBody.innerHTML = '';
         if (!imports || imports.length === 0) {
-            importsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">Chưa có phiếu nhập nào</td></tr>'; return;
+            importsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">Chưa có phiếu nhập nào</td></tr>'; 
+            return;
         }
         imports.forEach(item => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><div class="fw-bold text-primary">#${item.id}</div></td>
-                <td>${item.artistName}</td>
-                <td>${new Date(item.date).toLocaleDateString('vi-VN')}</td>
-                <td>${item.employeeName}</td>
-                <td class="text-end fw-bold">${formatCurrency(item.totalValue)}</td>
+                <td>${item.artistName || 'N/A'}</td>
+                <td>${formatDate(item.importDate)}</td>
+                <td>${item.createdByUsername || 'N/A'}</td>
+                <td class="text-end fw-bold">${formatCurrency(item.totalAmount)}</td>
                 <td class="text-center">${getStatusBadge(item.status)}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-secondary view-detail-btn" data-id="${item.id}" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
                     <button class="btn btn-sm btn-outline-info print-btn" data-id="${item.id}" title="In phiếu"><i class="bi bi-printer"></i></button>
-                    <button class="btn btn-sm btn-outline-danger cancel-btn" data-id="${item.id}" title="Hủy phiếu" ${item.status === 'Đã hủy' ? 'disabled' : ''}><i class="bi bi-x-circle"></i></button>
                 </td>
             `;
             importsTableBody.appendChild(row);
         });
     }
 
-    // --- Hàm xử lý Logic & Modal ---
-    function handleViewDetailClick(importId) {
-        const item = sampleImports.find(i => i.id === importId);
-        if (!item) return;
+     function handleViewDetailClick(slipId) {
+        const slip = allImportSlips.find(s => s.id == slipId);
+        if (!slip) {
+            alert('Không tìm thấy thông tin phiếu nhập.');
+            return;
+        }
 
-        document.getElementById('modal-import-id').textContent = '#' + item.id;
-        document.getElementById('modal-artist-name').textContent = item.artistName;
-        document.getElementById('modal-employee-name').textContent = item.employeeName;
-        document.getElementById('modal-import-date').textContent = new Date(item.date).toLocaleDateString('vi-VN');
-        document.getElementById('modal-import-status').innerHTML = getStatusBadge(item.status);
-        document.getElementById('modal-total').textContent = formatCurrency(item.totalValue);
+        document.getElementById('modal-import-id').textContent = '#' + slip.id;
+        document.getElementById('modal-artist-name').textContent = slip.artistName;
+        document.getElementById('modal-employee-name').textContent = slip.createdByUsername;
+        document.getElementById('modal-import-date').textContent = formatDate(slip.importDate);
+        document.getElementById('modal-import-status').innerHTML = getStatusBadge(slip.status);
+        document.getElementById('modal-total').textContent = formatCurrency(slip.totalAmount);
         
         const productListBody = document.getElementById('modal-product-list');
         productListBody.innerHTML = '';
-        item.products.forEach(p => {
+        slip.slipDetails.forEach(p => {
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${p.name}</td><td>${p.quantity}</td><td class="text-end">${formatCurrency(p.price)}</td><td class="text-end fw-bold">${formatCurrency(p.price * p.quantity)}</td>`;
+            row.innerHTML = `
+                <td>${p.paintingName}</td>
+                <td>${p.quantity}</td>
+                <td class="text-end">${formatCurrency(p.importPrice)}</td>
+                <td class="text-end fw-bold">${formatCurrency(p.importPrice * p.quantity)}</td>
+            `;
             productListBody.appendChild(row);
         });
         
         importDetailModal.show();
     }
-    
-    // HÀM MỚI: Xử lý sự kiện In phiếu
-    function handlePrintClick(importId) {
-        const slipData = sampleImports.find(i => i.id === importId);
-        if (slipData) {
-            localStorage.setItem('slipForPrint', JSON.stringify(slipData));
-            window.open('hoa-don-nhap.html', '_blank');
+
+
+    // --- HÀM TẢI DỮ LIỆU ---
+    async function loadImportSlips() {
+        try {
+            allImportSlips = await fetchApi('/import-slips');
+            renderImports(allImportSlips);
+        } catch (error) {
+            console.error("Lỗi tải danh sách phiếu nhập:", error);
+            importsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-5">Không thể tải dữ liệu</td></tr>';
         }
     }
-
-    // --- Gắn các sự kiện (đã cập nhật) ---
-    sidebarToggleBtn.addEventListener('click', () => mainContainer.classList.toggle('sidebar-collapsed'));
 
     importsTableBody.addEventListener('click', function(event) {
         const targetBtn = event.target.closest('button');
         if (!targetBtn) return;
         
-        const importId = targetBtn.dataset.id;
+        const slipId = targetBtn.dataset.id;
 
         if (targetBtn.classList.contains('view-detail-btn')) {
-            handleViewDetailClick(importId);
-        } else if (targetBtn.classList.contains('print-btn')) {
-            handlePrintClick(importId);
-        } else if (targetBtn.classList.contains('cancel-btn')) {
-            // Thay vì confirm, giờ ta mở modal
-            document.getElementById('cancel-slip-id').textContent = '#' + importId;
-            document.getElementById('confirm-cancel-btn').dataset.id = importId; // Gắn id vào nút xác nhận
-            cancelConfirmModal.show();
+            handleViewDetailClick(slipId);
         }
-    });
-    
-    // Gắn sự kiện cho nút xác nhận hủy trong modal
-    document.getElementById('confirm-cancel-btn').addEventListener('click', function() {
-        const importId = this.dataset.id;
-        alert(`Đã hủy phiếu nhập #${importId} (hành động mô phỏng).`);
-        // Trong dự án thực tế, đây là lúc gọi API để cập nhật trạng thái
-        // Sau đó render lại bảng...
-        cancelConfirmModal.hide();
-    });
+    });  
 
-    // --- Khởi chạy ---
-    renderImports(sampleImports);
+    // --- KHỞI CHẠY ---
+    loadImportSlips();
 });

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
     // ===============================================
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-
+    checkUserRoleAndApplyUI();
     // ===============================================
     // Hiệu ứng 3: Các thẻ (card) hiện ra khi cuộn chuột
     // ===============================================
@@ -50,3 +50,43 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===============================================
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]');
 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+function checkUserRoleAndApplyUI() {
+    const token = localStorage.getItem('accessToken');
+
+    // Nếu không có token, chuyển về trang đăng nhập
+    if (!token && window.location.pathname !== '/dang-nhap.html') {
+        window.location.href = '/dang-nhap.html';
+        return;
+    }
+
+    try {
+        // Giải mã phần payload của JWT
+        const payloadBase64 = token.split('.')[1];
+        const decodedPayload = atob(payloadBase64);
+        const payload = JSON.parse(decodedPayload);
+
+        const userRoles = payload.roles; // Lấy chuỗi roles, ví dụ: "ROLE_MANAGER" hoặc "ROLE_STAFF"
+
+        // Nếu người dùng là STAFF, ẩn các mục menu của Manager
+        if (userRoles && userRoles.includes('ROLE_STAFF')) {
+            const paymentMenuItem = document.getElementById('menu-thanh-toan');
+            const accountMenuItem = document.getElementById('menu-tai-khoan');
+            const textHethong = document.getElementById('text-hethong');
+            if (paymentMenuItem) {
+                paymentMenuItem.style.display = 'none';
+            }
+            if (accountMenuItem) {
+                accountMenuItem.style.display = 'none';
+            }
+            if (textHethong) {
+                textHethong.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.error('Lỗi giải mã token hoặc áp dụng UI:', e);
+        // Nếu token không hợp lệ, xóa và về trang đăng nhập
+        localStorage.clear();
+        window.location.href = '/dang-nhap.html';
+    }
+}

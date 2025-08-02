@@ -21,4 +21,12 @@ public class FileUploadController {
         String filePath = fileStorageService.store(file, "qr-codes");
         return ResponseEntity.ok(Map.of("filePath", filePath));
     }
+
+    // --- PHƯƠNG THỨC MỚI ĐƯỢC THÊM VÀO ---
+    @PostMapping("/upload/painting")
+    public ResponseEntity<?> uploadPaintingImage(@RequestParam("file") MultipartFile file) {
+        // Lưu ảnh vào thư mục con "paintings"
+        String filePath = fileStorageService.store(file, "paintings");
+        return ResponseEntity.ok(Map.of("filePath", filePath));
+    }
 }

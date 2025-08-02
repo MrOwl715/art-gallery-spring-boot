@@ -11,6 +11,7 @@ import com.example.art_gal.repository.PaintingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.art_gal.entity.PaintingStatus;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -55,7 +56,7 @@ public class PaintingService {
         paintingToUpdate.setImageUrl(paintingDTO.getImageUrl());
         paintingToUpdate.setMaterial(paintingDTO.getMaterial());
         paintingToUpdate.setSize(paintingDTO.getSize());
-        paintingToUpdate.setStatus(paintingDTO.isStatus());
+        paintingToUpdate.setStatus(paintingDTO.getStatus());
         paintingToUpdate.setArtist(artist);
         paintingToUpdate.setCategory(category);
 
@@ -85,7 +86,7 @@ public class PaintingService {
         dto.setQuantity(painting.getQuantity());
         dto.setMaterial(painting.getMaterial());
         dto.setSize(painting.getSize());
-        dto.setStatus(painting.isStatus());
+        dto.setStatus(painting.getStatus());
         if (painting.getArtist() != null) {
             dto.setArtistId(painting.getArtist().getId());
         }

@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.math.BigDecimal;
 
+import com.example.art_gal.entity.PaintingStatus;
+
 @Data
 public class PaintingDTO {
     private Long id;
@@ -33,7 +35,7 @@ public class PaintingDTO {
 
     private String size;
 
-    private boolean status;
+    private PaintingStatus status;
 
     @NotNull(message = "ID Họa sĩ không được để trống")
     private Long artistId;

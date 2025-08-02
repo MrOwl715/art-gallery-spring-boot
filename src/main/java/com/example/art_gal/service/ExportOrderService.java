@@ -51,7 +51,13 @@ public class ExportOrderService {
             if (painting.getQuantity() < detailDTO.getQuantity()) {
                 throw new IllegalStateException("Not enough stock for painting: " + painting.getName());
             }
-            painting.setQuantity(painting.getQuantity() - detailDTO.getQuantity());
+            int newQuantity = painting.getQuantity() - detailDTO.getQuantity();
+            painting.setQuantity(newQuantity);
+
+            // Nếu bán hết, chuyển trạng thái thành Đã bán
+            if (newQuantity == 0) {
+                painting.setStatus(PaintingStatus.SOLD);
+            }
 
             BigDecimal sellingPrice = painting.getSellingPrice();
             totalAmount = totalAmount.add(sellingPrice.multiply(BigDecimal.valueOf(detailDTO.getQuantity())));
@@ -86,7 +92,7 @@ public class ExportOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
     }
 
-    private ExportOrderDTO convertToDTO(ExportOrder order) {
+    public ExportOrderDTO convertToDTO(ExportOrder order) {
         ExportOrderDTO dto = new ExportOrderDTO();
         dto.setId(order.getId());
         if (order.getCustomer() != null) {

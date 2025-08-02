@@ -30,5 +30,6 @@ public interface ExportOrderRepository extends JpaRepository<ExportOrder, Long> 
     @Query("SELECT FUNCTION('HOUR', e.orderDate), SUM(e.totalAmount) FROM ExportOrder e WHERE e.orderDate BETWEEN :startDate AND :endDate AND e.status = 'COMPLETED' GROUP BY FUNCTION('HOUR', e.orderDate) ORDER BY FUNCTION('HOUR', e.orderDate)")
     List<Object[]> findHourlyRevenueByDateRange(LocalDateTime startDate, LocalDateTime endDate);
 
+    List<ExportOrder> findByCustomerId(Long customerId);
     
 }

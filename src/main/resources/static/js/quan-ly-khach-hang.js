@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const customersTableBody = document.getElementById('customers-table-body');
     const addCustomerModal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
     const editCustomerModal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
-    
+    const purchaseHistoryModal = new bootstrap.Modal(document.getElementById('purchaseHistoryModal')); // Modal mới
+
     const saveAddBtn = document.querySelector('#addCustomerModal .btn-primary');
     const saveEditBtn = document.querySelector('#editCustomerModal .btn-primary');
     
@@ -36,8 +37,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return response.json();
     }
 
-    // --- HÀM TIỆN ÍCH ---
+    // --- CÁC HÀM TIỆN ÍCH ---
     const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Hoạt động' : 'Tạm ẩn'}</span>`;
+    const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    const formatDate = (dateString) => new Date(dateString).toLocaleDateString('vi-VN');
 
     // --- HÀM RENDER ---
     function renderCustomers(customers) {
@@ -55,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td class="text-center">${getStatusBadge(customer.status)}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${customer.id}" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-sm btn-outline-info history-btn" data-id="${customer.id}" title="Lịch sử mua hàng"><i class="bi bi-clock-history"></i></button>
                 </td>
             `;
             customersTableBody.appendChild(row);
@@ -145,8 +149,44 @@ document.addEventListener('DOMContentLoaded', function () {
             await fetchApi(`/customers/${customerId}`, { method: 'PUT', body: JSON.stringify(customerData) });
             editCustomerModal.hide();
             loadCustomers();
-        } catch (error) {
+        } catch (error)
+        {
             alert(`Cập nhật thất bại: ${error.message}`);
+        }
+    }
+
+    // --- HÀM MỚI: XỬ LÝ XEM LỊCH SỬ MUA HÀNG ---
+    async function handleHistoryClick(customerId) {
+        try {
+            const customer = allCustomers.find(c => c.id == customerId);
+            if (!customer) return;
+
+            document.getElementById('history-customer-name').textContent = customer.name;
+            const historyTableBody = document.getElementById('history-table-body');
+            historyTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Đang tải...</td></tr>';
+            purchaseHistoryModal.show();
+            
+            const orders = await fetchApi(`/customers/${customerId}/orders`);
+            
+            if (orders.length === 0) {
+                historyTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Khách hàng này chưa có đơn hàng nào.</td></tr>';
+                return;
+            }
+
+            historyTableBody.innerHTML = '';
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${order.id}</td>
+                    <td>${formatDate(order.orderDate)}</td>
+                    <td class="text-end fw-bold">${formatCurrency(order.totalAmount)}</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
+
+        } catch (error) {
+            alert(`Lỗi khi tải lịch sử mua hàng: ${error.message}`);
+            purchaseHistoryModal.hide();
         }
     }
 
@@ -156,7 +196,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     customersTableBody.addEventListener('click', function(event) {
         const editBtn = event.target.closest('.edit-btn');
-        if (editBtn) handleEditClick(editBtn.dataset.id);
+        if (editBtn) {
+            handleEditClick(editBtn.dataset.id);
+            return;
+        }
+
+        const historyBtn = event.target.closest('.history-btn');
+        if (historyBtn) {
+            handleHistoryClick(historyBtn.dataset.id);
+        }
     });
     
     searchBtn.addEventListener('click', filterAndRenderCustomers);

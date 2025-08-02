@@ -1,6 +1,7 @@
 package com.example.art_gal.controller;
 
 import com.example.art_gal.dto.CustomerDTO;
+import com.example.art_gal.dto.ExportOrderDTO;
 import com.example.art_gal.service.CustomerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,5 +42,10 @@ public class CustomerController {
     public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
         customerService.deleteCustomer(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/orders")
+    public ResponseEntity<List<ExportOrderDTO>> getCustomerOrders(@PathVariable Long id) {
+        return ResponseEntity.ok(customerService.getCustomerOrders(id));
     }
 }

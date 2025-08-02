@@ -1,9 +1,13 @@
 package com.example.art_gal.service;
 
 import com.example.art_gal.dto.CustomerDTO;
+import com.example.art_gal.dto.ExportOrderDTO;
 import com.example.art_gal.entity.Customer;
+import com.example.art_gal.entity.ExportOrder;
 import com.example.art_gal.exception.ResourceNotFoundException;
 import com.example.art_gal.repository.CustomerRepository;
+import com.example.art_gal.repository.ExportOrderRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +19,13 @@ public class CustomerService {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private ExportOrderRepository exportOrderRepository;
+    @Autowired
+    private ExportOrderService exportOrderService;
+
+    
 
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
         Customer customer = convertToEntity(customerDTO);
@@ -56,6 +67,15 @@ public class CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
     }
 
+
+    public List<ExportOrderDTO> getCustomerOrders(Long customerId) {
+        findCustomerById(customerId); // Kiểm tra xem khách hàng có tồn tại không
+        List<ExportOrder> orders = exportOrderRepository.findByCustomerId(customerId);
+        return orders.stream()
+                     .map(exportOrderService::convertToDTO) // Dùng lại hàm convert có sẵn
+                     .collect(Collectors.toList());
+                     
+    }
     private CustomerDTO convertToDTO(Customer customer) {
         CustomerDTO dto = new CustomerDTO();
         dto.setId(customer.getId());

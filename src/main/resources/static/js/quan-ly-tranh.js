@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let allPaintings = [];
     let allArtists = [];
     let allCategories = [];
+    let currentView = 'grid'; // Biến để theo dõi chế độ xem
 
     // --- LẤY CÁC PHẦN TỬ DOM ---
     const displayArea = document.getElementById('painting-display-area');
@@ -19,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('search-input');
     const statusFilter = document.getElementById('filter-status');
     const searchBtn = document.getElementById('search-btn');
+    const gridViewBtn = document.getElementById('view-grid-btn');
+    const listViewBtn = document.getElementById('view-list-btn');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
@@ -34,10 +37,41 @@ document.addEventListener('DOMContentLoaded', function () {
         if (response.status === 204) return null;
         return response.json();
     }
+    
+    // --- HÀM TẢI FILE LÊN SERVER ---
+    async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/files/upload/painting`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Upload file thất bại.');
+        }
+        const result = await response.json();
+        return result.filePath;
+    }
 
     // --- CÁC HÀM TIỆN ÍCH ---
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    const getStatusBadge = (status) => `<span class="badge ${status ? 'bg-success' : 'bg-secondary'}">${status ? 'Đang bán' : 'Dừng bán'}</span>`;
+    
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'FOR_SALE':
+                return `<span class="badge bg-success">Đang bán</span>`;
+            case 'SOLD':
+                return `<span class="badge bg-secondary">Đã bán</span>`;
+            case 'NOT_FOR_SALE':
+                return `<span class="badge bg-danger">Dừng bán</span>`;
+            default:
+                return `<span class="badge bg-dark">Không rõ</span>`;
+        }
+    };
 
     // --- CÁC HÀM RENDER ---
     function renderGridView(paintings) {
@@ -51,14 +85,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const artist = allArtists.find(a => a.id === p.artistId);
             const col = document.createElement('div');
             col.className = 'col-12 col-sm-6 col-lg-4 col-xl-3';
+            
+            const soldClass = p.status === 'SOLD' ? 'is-sold' : '';
+
             col.innerHTML = `
-                <div class="card h-100 product-card">
+                <div class="card h-100 product-card ${soldClass}" data-id="${p.id}">
                     <img src="${p.imageUrl || 'https://placehold.co/400x300'}" class="card-img-top" alt="${p.name}">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">${p.name}</h5>
                         <p class="card-text text-muted small">Họa sĩ: ${artist ? artist.name : 'N/A'}</p>
                         <div class="mt-auto">
-                            <span class="price d-block mb-2">${formatCurrency(p.price)}</span>
+                            <span class="price d-block mb-2">${formatCurrency(p.sellingPrice)}</span>
                             ${getStatusBadge(p.status)}
                         </div>
                     </div>
@@ -69,6 +106,47 @@ document.addEventListener('DOMContentLoaded', function () {
             row.appendChild(col);
         });
         displayArea.appendChild(row);
+    }
+
+    function renderListView(paintings) {
+        displayArea.innerHTML = '';
+        if (paintings.length === 0) {
+            displayArea.innerHTML = '<p class="col-12 text-muted text-center mt-5">Không tìm thấy tranh nào.</p>';
+            return;
+        }
+        paintings.forEach(p => {
+            const artist = allArtists.find(a => a.id === p.artistId);
+            const item = document.createElement('div');
+            
+            const soldClass = p.status === 'SOLD' ? 'is-sold' : '';
+            item.className = `painting-list-item ${soldClass}`; 
+
+            item.innerHTML = `
+                <img src="${p.imageUrl || 'https://placehold.co/80x80'}" class="item-image" alt="${p.name}">
+                <div class="item-info">
+                    <h5>${p.name}</h5>
+                    <p>Họa sĩ: ${artist ? artist.name : 'N/A'}</p>
+                </div>
+                <div class="item-price">
+                    ${formatCurrency(p.sellingPrice)}
+                </div>
+                <div class="item-status">
+                    ${getStatusBadge(p.status)}
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-primary edit-btn" data-id="${p.id}" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></button>
+                </div>
+            `;
+            displayArea.appendChild(item);
+        });
+    }
+
+    function renderPaintings(paintings) {
+        if (currentView === 'grid') {
+            renderGridView(paintings);
+        } else {
+            renderListView(paintings);
+        }
     }
 
     function populateSelectOptions(selectElementId, data, valueField, textField) {
@@ -87,9 +165,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let filteredPaintings = allPaintings;
 
-        if (statusValue !== 'all') {
-            const isStatusActive = (statusValue === 'true');
-            filteredPaintings = filteredPaintings.filter(p => p.status === isStatusActive);
+        if (statusValue !== 'ALL') {
+            filteredPaintings = filteredPaintings.filter(p => p.status === statusValue);
         }
 
         if (searchTerm) {
@@ -100,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        renderGridView(filteredPaintings);
+        renderPaintings(filteredPaintings);
     }
     
     // --- HÀM XỬ LÝ SỰ KIỆN (Sửa, Cập nhật) ---
@@ -110,12 +187,17 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-painting-id').value = painting.id;
             document.getElementById('edit-painting-name-title').textContent = painting.name;
             document.getElementById('edit-name').value = painting.name;
-            document.getElementById('edit-selling-price').value = painting.price;
+            document.getElementById('edit-selling-price').value = painting.sellingPrice;
             document.getElementById('edit-image-url').value = painting.imageUrl || '';
+            document.getElementById('edit-image-file').value = '';
             document.getElementById('edit-material-input').value = painting.material || '';
             document.getElementById('edit-size').value = painting.size || '';
             document.getElementById('edit-description').value = painting.description || '';
-            document.getElementById('edit-status').value = painting.status;
+            
+            const statusSelect = document.getElementById('edit-status');
+            statusSelect.value = painting.status;
+            statusSelect.disabled = painting.status === 'SOLD';
+
             document.getElementById('edit-artist-select').value = painting.artistId;
             document.getElementById('edit-category-select').value = painting.categoryId;
             editPaintingModal.show();
@@ -127,17 +209,30 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleUpdatePainting(event) {
         event.preventDefault();
         const paintingId = document.getElementById('edit-painting-id').value;
+        const imageFileInput = document.getElementById('edit-image-file');
+        let imageUrl = document.getElementById('edit-image-url').value.trim();
+
+        if (imageFileInput.files.length > 0) {
+            try {
+                imageUrl = await uploadFile(imageFileInput.files[0]);
+            } catch (error) {
+                alert(`Lỗi tải ảnh lên: ${error.message}`);
+                return;
+            }
+        }
+        
+        const currentPainting = await fetchApi(`/paintings/${paintingId}`);
         const paintingData = {
+            sellingPrice: document.getElementById('edit-selling-price').value,
+            importPrice: currentPainting.importPrice,
             name: document.getElementById('edit-name').value,
-            price: document.getElementById('edit-selling-price').value,
-            imageUrl: document.getElementById('edit-image-url').value,
+            imageUrl: imageUrl,
             material: document.getElementById('edit-material-input').value,
             size: document.getElementById('edit-size').value,
             description: document.getElementById('edit-description').value,
-            status: document.getElementById('edit-status').value === 'true',
+            status: document.getElementById('edit-status').value,
             artistId: document.getElementById('edit-artist-select').value,
             categoryId: document.getElementById('edit-category-select').value,
-            quantity: 0 // Thêm giá trị mặc định cho trường còn thiếu
         };
         try {
             await fetchApi(`/paintings/${paintingId}`, { method: 'PUT', body: JSON.stringify(paintingData) });
@@ -155,12 +250,6 @@ document.addEventListener('DOMContentLoaded', function () {
             ]);
             allPaintings = paintings; allArtists = artists; allCategories = categories;
             
-            // Điền dữ liệu cho bộ lọc trước khi render
-            const filterStatusSelect = document.getElementById('filter-status');
-            if (filterStatusSelect) {
-                filterStatusSelect.innerHTML = `<option value="all">Tất cả trạng thái</option><option value="true">Đang bán</option><option value="false">Dừng bán</option>`;
-            }
-
             filterAndRenderPaintings();
             
             populateSelectOptions('edit-artist-select', allArtists, 'id', 'name');
@@ -177,11 +266,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (editBtn) handleEditClick(editBtn.dataset.id);
     });
     saveEditBtn.addEventListener('click', handleUpdatePainting);
-
     searchBtn.addEventListener('click', filterAndRenderPaintings);
     statusFilter.addEventListener('change', filterAndRenderPaintings);
     searchInput.addEventListener('keyup', (event) => {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter') filterAndRenderPaintings();
+    });
+    gridViewBtn.addEventListener('click', () => {
+        if (currentView !== 'grid') {
+            currentView = 'grid';
+            listViewBtn.classList.remove('active');
+            gridViewBtn.classList.add('active');
+            filterAndRenderPaintings();
+        }
+    });
+    listViewBtn.addEventListener('click', () => {
+        if (currentView !== 'list') {
+            currentView = 'list';
+            gridViewBtn.classList.remove('active');
+            listViewBtn.classList.add('active');
             filterAndRenderPaintings();
         }
     });

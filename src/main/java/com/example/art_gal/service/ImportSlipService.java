@@ -58,7 +58,7 @@ public class ImportSlipService {
             newPainting.setImageUrl(paintingDTO.getImageUrl());
             newPainting.setMaterial(paintingDTO.getMaterial());
             newPainting.setSize(paintingDTO.getSize());
-            newPainting.setStatus(true);
+            newPainting.setStatus(PaintingStatus.FOR_SALE);
             newPainting.setQuantity(1);
             newPainting.setArtist(artist);
             newPainting.setCategory(category);

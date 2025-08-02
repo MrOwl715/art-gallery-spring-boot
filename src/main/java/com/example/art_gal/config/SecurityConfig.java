@@ -57,11 +57,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        // .requestMatchers("/quan-ly-tai-khoan.html", "quan-ly-thanh-toan.html").hasRole("MANAGER")
-                        .requestMatchers("/api/files/**").permitAll() 
+                        // .requestMatchers("/quan-ly-tai-khoan.html",
+                        // "quan-ly-thanh-toan.html").hasRole("MANAGER")
+                        .requestMatchers("/api/files/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll() // Cho phép API đăng nhập/đăng ký
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/dang-nhap.html", "/", "/index.html",
-                                "/*.html")
+                        .requestMatchers(
+                            "/css/**", 
+                            "/js/**", 
+                            "/images/**", 
+                            "/uploads/**",
+                            "/dang-nhap.html", 
+                            "/", "/index.html",
+                            "/*.html")
                         .permitAll()
                         .requestMatchers("/api/**").authenticated() // Bắt buộc xác thực cho các API còn lại
 

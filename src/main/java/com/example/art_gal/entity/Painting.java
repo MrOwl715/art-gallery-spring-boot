@@ -19,20 +19,22 @@ public class Painting {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // --- CÁC THAY ĐỔI ---
     @Column(name = "import_price", nullable = false)
-    private BigDecimal importPrice; // Giá nhập
+    private BigDecimal importPrice;
 
     @Column(name = "selling_price", nullable = false)
-    private BigDecimal sellingPrice; // Giá bán
+    private BigDecimal sellingPrice;
 
     private String imageUrl;
     private int quantity;
     private String material;
     private String size;
 
+    // --- THAY ĐỔI Ở ĐÂY ---
+    // Đổi từ EnumType.STRING sang EnumType.ORDINAL
+    @Enumerated(EnumType.ORDINAL)
     @Column(nullable = false)
-    private boolean status;
+    private PaintingStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "artist_id", nullable = false)

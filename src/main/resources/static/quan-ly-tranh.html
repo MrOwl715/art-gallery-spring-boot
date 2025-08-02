@@ -104,7 +104,11 @@
                             </div>
                         </div>
                         <div class="col-lg-4">
-                            <select class="form-select" id="filter-status">
+                             <select class="form-select" id="filter-status">
+                                <option value="ALL">Tất cả trạng thái</option>
+                                <option value="FOR_SALE">Đang bán</option>
+                                <option value="NOT_FOR_SALE">Dừng bán</option>
+                                <option value="SOLD">Đã bán</option>
                             </select>
                         </div>
                         <div class="col-lg-2 text-lg-end">
@@ -148,9 +152,15 @@
                         <div class="col-md-6"><label for="edit-selling-price" class="form-label">Giá bán
                                 (VND)</label><input type="number" id="edit-selling-price" class="form-control" required>
                         </div>
-                        <div class="col-md-6"><label for="edit-image-url" class="form-label">Ảnh minh họa
-                                (URL)</label><input type="text" class="form-control" id="edit-image-url"></div>
 
+                        <div class="col-md-6">
+                            <label for="edit-image-url" class="form-label">Ảnh minh họa (URL)</label>
+                            <input type="text" class="form-control" id="edit-image-url">
+                        </div>
+                        <div class="col-12">
+                            <label for="edit-image-file" class="form-label">Hoặc tải ảnh mới thay thế</label>
+                            <input type="file" class="form-control" id="edit-image-file" accept="image/*">
+                        </div>
                         <div class="col-md-6"><label for="edit-material-input" class="form-label">Chất
                                 liệu</label><input type="text" class="form-control" id="edit-material-input"></div>
                         <div class="col-md-6"><label for="edit-size" class="form-label">Kích thước</label><input
@@ -161,9 +171,9 @@
 
                         <div class="col-12"><label for="edit-status" class="form-label">Trạng thái</label>
                             <select class="form-select" id="edit-status">
-                                <option value="true">Đang bán</option>
-                                <option value="false">Dừng bán</option>
-                            </select>
+                                <option value="FOR_SALE">Đang bán</option>
+                                <option value="NOT_FOR_SALE">Dừng bán</option>
+                                </select>
                         </div>
                     </form>
                 </div>

@@ -36,6 +36,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
+    // --- HÀM MỚI: TẢI FILE LÊN SERVER ---
+    async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/files/upload/painting`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Upload file thất bại.');
+        }
+        const result = await response.json();
+        return result.filePath; // Trả về đường dẫn file trên server
+    }
+
     // --- CÁC HÀM RENDER ---
     function renderImportSlip() {
         if (importSlipItems.length === 0) {
@@ -49,7 +70,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const category = allCategories.find(c => c.id == item.categoryId);
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td><div class="fw-bold">${item.name}</div></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${item.imageUrl || 'https://placehold.co/60x60'}" width="40" height="40" class="me-3 rounded" alt="${item.name}">
+                            <div class="fw-bold">${item.name}</div>
+                        </div>
+                    </td>
                     <td>${category ? category.name : ''}</td>
                     <td class="text-end">${formatCurrency(item.importPrice)}</td>
                     <td class="text-end">${formatCurrency(item.sellingPrice)}</td>
@@ -64,12 +90,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     function updateTotalValue() {
-        const total = importSlipItems.reduce((sum, item) => sum + item.importPrice, 0);
+        const total = importSlipItems.reduce((sum, item) => sum + (item.importPrice * 1), 0); // Mỗi sản phẩm nhập số lượng là 1
         totalImportValueEl.textContent = formatCurrency(total);
     }
 
     // --- CÁC HÀM XỬ LÝ ---
-    function handleAddItemToSlip() {
+    async function handleAddItemToSlip() {
+        const addPaintingForm = document.getElementById('add-painting-form');
+        const imageFileInput = document.getElementById('add-image-file');
+        let imageUrl = document.getElementById('add-image-url').value.trim();
+
+        // Ưu tiên ảnh upload
+        if (imageFileInput.files.length > 0) {
+            try {
+                imageUrl = await uploadFile(imageFileInput.files[0]);
+            } catch (error) {
+                alert(`Lỗi tải ảnh lên: ${error.message}`);
+                return;
+            }
+        }
+        
         const newItem = {
             name: document.getElementById('add-name').value,
             importPrice: parseFloat(document.getElementById('add-import-price').value),
@@ -77,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
             description: document.getElementById('add-description').value,
             material: document.getElementById('add-material').value,
             size: document.getElementById('add-size').value,
-            imageUrl: document.getElementById('add-image-url').value,
+            imageUrl: imageUrl, // Sử dụng URL sau khi đã upload
             categoryId: document.getElementById('add-category-select').value,
         };
 
@@ -94,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
         importSlipItems.push(newItem);
         renderImportSlip();
         addNewPaintingModal.hide();
-        document.getElementById('add-painting-form').reset();
+        addPaintingForm.reset();
     }
 
     function handleReviewImport() {
@@ -152,8 +192,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 fetchApi('/categories')
             ]);
             
-            artistSelect.innerHTML = '<option value="" disabled selected>Chọn nhà cung cấp...</option>' + allArtists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-            document.getElementById('add-category-select').innerHTML = '<option value="" disabled selected>Chọn thể loại...</option>' + allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            artistSelect.innerHTML = '<option value="" disabled selected>Chọn nhà cung cấp...</option>' + allArtists.filter(a => a.status).map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            document.getElementById('add-category-select').innerHTML = '<option value="" disabled selected>Chọn thể loại...</option>' + allCategories.filter(c => c.status).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         
             renderImportSlip();
             document.getElementById('import-date').valueAsDate = new Date();

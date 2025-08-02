@@ -86,6 +86,31 @@ document.addEventListener('DOMContentLoaded', function () {
         importDetailModal.show();
     }
 
+    // --- HÀM MỚI ĐỂ XỬ LÝ IN ---
+    function handlePrintClick(slipId) {
+        const slip = allImportSlips.find(s => s.id == slipId);
+        if (!slip) {
+            alert('Không tìm thấy phiếu nhập để in.');
+            return;
+        }
+
+        // Chuẩn bị dữ liệu theo cấu trúc mà hoa-don-nhap.html cần
+        const dataForPrint = {
+            id: slip.id,
+            date: slip.importDate,
+            artistName: slip.artistName,
+            products: slip.slipDetails.map(detail => ({
+                name: detail.paintingName,
+                importPrice: detail.importPrice
+            })),
+            totalValue: slip.totalAmount
+        };
+
+        // Lưu vào localStorage và mở trang in
+        localStorage.setItem('slipForPrint', JSON.stringify(dataForPrint));
+        window.open('hoa-don-nhap.html', '_blank', 'width=500,height=700');
+    }
+
 
     // --- HÀM TẢI DỮ LIỆU ---
     async function loadImportSlips() {
@@ -98,14 +123,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // --- CẬP NHẬT LẠI HÀM LẮNG NGHE SỰ KIỆN ---
     importsTableBody.addEventListener('click', function(event) {
         const targetBtn = event.target.closest('button');
         if (!targetBtn) return;
         
         const slipId = targetBtn.dataset.id;
 
+        // Kiểm tra xem nút nào được nhấn
         if (targetBtn.classList.contains('view-detail-btn')) {
             handleViewDetailClick(slipId);
+        } else if (targetBtn.classList.contains('print-btn')) {
+            handlePrintClick(slipId);
         }
     });  
 

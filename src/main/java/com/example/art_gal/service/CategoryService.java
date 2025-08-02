@@ -3,6 +3,7 @@ package com.example.art_gal.service;
 import com.example.art_gal.dto.CategoryDTO;
 import com.example.art_gal.repository.PaintingRepository;
 import com.example.art_gal.entity.Painting;
+import com.example.art_gal.entity.PaintingStatus;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.art_gal.entity.Category;
 import com.example.art_gal.exception.ResourceNotFoundException;
@@ -39,20 +40,39 @@ public class CategoryService {
         return convertToDTO(category);
     }
     
-    @Transactional // Đảm bảo tất cả thao tác trong hàm là một giao dịch
+    @Transactional
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = findCategoryById(id);
 
-        // Logic ẩn tranh hàng loạt
-        // Nếu trạng thái cũ là true (hiển thị) và trạng thái mới là false (ẩn)
+        // --- BẮT ĐẦU LOGIC CẬP NHẬT TRẠNG THÁI TRANH ---
+
+        // Trường hợp 1: Ẩn danh mục (từ true -> false)
         if (category.isStatus() && !categoryDTO.isStatus()) {
             List<Painting> paintingsToUpdate = paintingRepository.findByCategoryId(id);
             for (Painting painting : paintingsToUpdate) {
-                painting.setStatus(false); // Cập nhật trạng thái của tranh thành false (ẩn)
+                // Chỉ ảnh hưởng đến các tranh đang bán
+                if (painting.getStatus() == PaintingStatus.FOR_SALE) {
+                    painting.setStatus(PaintingStatus.NOT_FOR_SALE);
+                }
             }
-            paintingRepository.saveAll(paintingsToUpdate); // Lưu tất cả thay đổi
+            paintingRepository.saveAll(paintingsToUpdate);
         }
+        // Trường hợp 2: Hiển thị lại danh mục (từ false -> true)
+        else if (!category.isStatus() && categoryDTO.isStatus()) {
+            List<Painting> paintingsToUpdate = paintingRepository.findByCategoryId(id);
+            for (Painting painting : paintingsToUpdate) {
+                // Chỉ chuyển lại trạng thái cho các tranh đang "Dừng bán".
+                // Các tranh đã "Đã bán" (SOLD) sẽ không bị ảnh hưởng.
+                if (painting.getStatus() == PaintingStatus.NOT_FOR_SALE) {
+                    painting.setStatus(PaintingStatus.FOR_SALE);
+                }
+            }
+            paintingRepository.saveAll(paintingsToUpdate);
+        }
+        
+        // --- KẾT THÚC LOGIC CẬP NHẬT TRẠNG THÁI TRANH ---
 
+        // Cập nhật thông tin của chính danh mục đó
         category.setName(categoryDTO.getName());
         category.setDescription(categoryDTO.getDescription());
         category.setStatus(categoryDTO.isStatus());
@@ -62,6 +82,10 @@ public class CategoryService {
     
     public void deleteCategory(Long id) {
         Category category = findCategoryById(id);
+        // Cần thêm logic kiểm tra xem danh mục có tranh nào không trước khi xóa
+        if (paintingRepository.countByCategoryId(id) > 0) {
+            throw new IllegalStateException("Không thể xóa danh mục đang có chứa tranh.");
+        }
         categoryRepository.delete(category);
     }
 
@@ -76,7 +100,6 @@ public class CategoryService {
         dto.setName(category.getName());
         dto.setDescription(category.getDescription());
         dto.setStatus(category.isStatus());
-        // Lấy số lượng tranh từ repository
         dto.setPaintingCount((int) paintingRepository.countByCategoryId(category.getId()));
         return dto;
     }

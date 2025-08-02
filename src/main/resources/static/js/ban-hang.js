@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
     const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
     
-    // --- BỔ SUNG CÁC DOM BỊ THIẾU ---
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const mainContainer = document.querySelector('.main-container');
     const addCustomerModal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
@@ -166,7 +165,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCart();
     };
 
-    // --- BỔ SUNG: HÀM LƯU KHÁCH HÀNG MỚI ---
     async function handleSaveNewCustomer() {
         const name = document.getElementById('customer-name').value.trim();
         const phone = document.getElementById('customer-phone').value.trim();
@@ -180,7 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({ name, phone, status: true })
             });
 
-            // Tải lại danh sách khách hàng và chọn khách hàng mới
             allCustomers = await fetchApi('/customers');
             renderCustomerDropdown(allCustomers);
             customerSelect.value = newCustomer.id;
@@ -195,10 +192,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function handleConfirmPayment() {
         if (cart.length === 0) { alert('Giỏ hàng trống!'); return; }
-        
         const selectedCustomer = customerSelect.value;
         if (!selectedCustomer) { alert('Vui lòng chọn khách hàng.'); return; }
-
         const selectedPaymentMethod = paymentMethodOptions.querySelector('.active');
         if (!selectedPaymentMethod) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
         
@@ -209,16 +204,35 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         try {
-            await fetchApi('/export-orders', {
+            const createdOrder = await fetchApi('/export-orders', {
                 method: 'POST',
                 body: JSON.stringify(orderData)
             });
 
             alert('Tạo đơn hàng thành công!');
+            
+            const subtotal = createdOrder.totalAmount / (1 + TAX_RATE);
+            const tax = createdOrder.totalAmount - subtotal;
+            const dataForPrint = {
+                id: createdOrder.id,
+                date: new Date(createdOrder.orderDate).toLocaleString('vi-VN'),
+                items: createdOrder.orderDetails.map(detail => ({
+                    name: detail.paintingName,
+                    quantity: detail.quantity,
+                    price: detail.price
+                })),
+                subtotal: subtotal,
+                tax: tax,
+                total: createdOrder.totalAmount
+            };
+
+            localStorage.setItem('currentOrderForPrint', JSON.stringify(dataForPrint));
+            window.open('hoa-don.html', '_blank', 'width=350,height=600');
+
             paymentModal.hide();
             cart = [];
             renderCart();
-            loadInitialData(); // Tải lại để cập nhật số lượng tồn kho
+            loadInitialData();
 
         } catch (error) {
             alert(`Lỗi tạo đơn hàng: ${error.message}`);
@@ -235,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetchApi('/payment-methods')
             ]);
             
-            renderPaintings(allPaintings.filter(p => p.status && p.quantity > 0)); // Chỉ hiển thị tranh đang bán và còn hàng
+            renderPaintings(allPaintings.filter(p => p.status === 'FOR_SALE' && p.quantity > 0));
             renderCategoryFilters(allCategories);
             renderCustomerDropdown(allCustomers);
             renderPaymentMethods(allPaymentMethods);
@@ -262,8 +276,8 @@ document.addEventListener('DOMContentLoaded', function() {
             target.classList.add('active');
             const categoryId = target.dataset.categoryId;
             const filteredPaintings = categoryId === 'all' 
-                ? allPaintings.filter(p => p.status && p.quantity > 0)
-                : allPaintings.filter(p => p.categoryId == categoryId && p.status && p.quantity > 0);
+                ? allPaintings.filter(p => p.status === 'FOR_SALE' && p.quantity > 0)
+                : allPaintings.filter(p => p.categoryId == categoryId && p.status === 'FOR_SALE' && p.quantity > 0);
             renderPaintings(filteredPaintings);
         }
     });
@@ -276,7 +290,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     confirmPaymentBtn.addEventListener('click', handleConfirmPayment);
     
-    // --- BỔ SUNG GẮN SỰ KIỆN ---
     sidebarToggleBtn.addEventListener('click', () => {
         mainContainer.classList.toggle('sidebar-collapsed');
     });

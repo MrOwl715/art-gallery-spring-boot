@@ -1,22 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     
-    // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
     const token = localStorage.getItem('accessToken');
 
-    // --- BIẾN VÀ LẤY PHẦN TỬ DOM ---
-    let salesChart, proportionChart; // Thêm biến cho biểu đồ mới
+    let salesChart, proportionChart;
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const mainContainer = document.querySelector('.main-container');
     const salesChartFilter = document.getElementById('sales-chart-filter');
-    const proportionChartFilter = document.getElementById('proportion-chart-filter');
     const reportTypeSelect = document.getElementById('report-type');
-    const dateRangeWrapper = document.getElementById('date-range-wrapper');
     const downloadReportBtn = document.getElementById('download-report-btn');
 
-
-    // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
         if (!token) { window.location.href = '/dang-nhap.html'; return; }
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -37,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-    // --- CÁC HÀM RENDER ---
     function renderKPIs(kpiData) {
         if (!kpiData) return;
         document.getElementById('kpi-total-orders').textContent = (kpiData.totalExportOrders || 0).toLocaleString('vi-VN');
@@ -47,37 +40,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function createCharts() {
-        // Biểu đồ Doanh thu
         const salesCtx = document.getElementById('salesChart').getContext('2d');
         salesChart = new Chart(salesCtx, {
             type: 'bar',
-            data: {
-                labels: [],
-                datasets: [{ label: 'Doanh thu', data: [], backgroundColor: 'rgba(249, 123, 34, 0.7)', borderRadius: 5 }]
-            },
-            options: { 
-                responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, 
-                scales: { y: { beginAtZero: true, ticks: { callback: (value) => new Intl.NumberFormat('vi-VN').format(value) + '₫' } }, x: { grid: { display: false } } } 
-            }
+            data: { labels: [], datasets: [{ label: 'Doanh thu', data: [], backgroundColor: 'rgba(249, 123, 34, 0.7)', borderRadius: 5 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: (value) => new Intl.NumberFormat('vi-VN').format(value) + '₫' } }, x: { grid: { display: false } } } }
         });
 
-        // --- BỔ SUNG: TẠO BIỂU ĐỒ TỶ LỆ BÁN CHẠY ---
         const proportionCtx = document.getElementById('proportionChart').getContext('2d');
         proportionChart = new Chart(proportionCtx, {
             type: 'doughnut',
-            data: {
-                labels: [],
-                datasets: [{ 
-                    data: [], 
-                    borderWidth: 0, 
-                    backgroundColor: ['#fd7e14', '#20c997', '#0dcaf0', '#6c757d', '#ffc107', '#dc3545'] 
-                }]
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { position: 'bottom', labels: { padding: 15 } } } 
-            }
+            data: { labels: [], datasets: [{ data: [], borderWidth: 0, backgroundColor: ['#fd7e14', '#20c997', '#0dcaf0', '#6c757d', '#ffc107', '#dc3545'] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 15 } } } }
         });
     }
 
@@ -88,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
         salesChart.update();
     }
 
-    // --- BỔ SUNG: HÀM CẬP NHẬT BIỂU ĐỒ TỶ LỆ ---
     function updateProportionChart(chartData) {
         if (!chartData || !proportionChart) return;
         proportionChart.data.labels = chartData.labels;
@@ -96,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
         proportionChart.update();
     }
     
-    // --- HÀM XỬ LÝ SỰ KIỆN ---
     async function handleSalesChartFilter(period) {
         try {
             const chartData = await fetchApi(`/dashboard/charts/${period}-revenue`);
@@ -108,26 +80,69 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+    
+    // --- HÀM MỚI: XỬ LÝ TẢI BÁO CÁO ---
+    async function handleDownloadReport() {
+        const reportType = reportTypeSelect.value;
+        if (!reportType) {
+            alert("Vui lòng chọn loại báo cáo.");
+            return;
+        }
 
-    // --- KHỞI CHẠY LẦN ĐẦU ---
+        const url = `${API_BASE_URL}/reports/download?type=${reportType}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                throw new Error('Tạo báo cáo thất bại.');
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = "report.xlsx";
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                if (filenameMatch.length > 1) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+
+        } catch (error) {
+            console.error('Lỗi khi tải báo cáo:', error);
+            alert('Không thể tải báo cáo. Vui lòng thử lại.');
+        }
+    }
+
+
     async function initialize() {
         if(sidebarToggleBtn && mainContainer) {
             sidebarToggleBtn.addEventListener('click', () => mainContainer.classList.toggle('sidebar-collapsed'));
         }
 
         try {
-            // Tải song song tất cả các API ban đầu
             const [stats, weeklyRevenue, proportionData] = await Promise.all([
                 fetchApi('/dashboard/stats'),
                 fetchApi('/dashboard/charts/weekly-revenue'),
-                fetchApi('/dashboard/charts/proportion-by-category') // API mới
+                fetchApi('/dashboard/charts/proportion-by-category')
             ]);
             
             renderKPIs(stats);
-            createCharts(); // Tạo cả 2 biểu đồ
+            createCharts();
             updateSalesChart(weeklyRevenue);
-            updateProportionChart(proportionData); // Cập nhật biểu đồ mới
-
+            updateProportionChart(proportionData);
         } catch(error) {
             if (error.message !== 'Unauthorized') {
                 console.error("Lỗi tải dữ liệu dashboard:", error);
@@ -136,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // GẮN SỰ KIỆN CHO CÁC NÚT LỌC BIỂU ĐỒ
     if (salesChartFilter) {
         salesChartFilter.addEventListener('click', function(e) {
             const targetButton = e.target.closest('button');
@@ -144,19 +158,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.querySelector('.active').classList.remove('active');
                 targetButton.classList.add('active');
                 const period = targetButton.dataset.period;
-                
-                let apiPeriod = period;
-                if (period === 'day') apiPeriod = 'daily';
-                if (period === 'week') apiPeriod = 'weekly';
-                if (period === 'month') apiPeriod = 'monthly';
-                if (period === 'year') apiPeriod = 'yearly';
-
+                const apiPeriod = { day: 'daily', week: 'weekly', month: 'monthly', year: 'yearly' }[period];
                 handleSalesChartFilter(apiPeriod);
             }
         });
     }
-    
-    // (Phần xử lý sự kiện cho bộ lọc của biểu đồ tỷ lệ sẽ được thêm sau nếu cần)
 
+    // Gắn sự kiện cho nút tải xuống
+    if (downloadReportBtn) {
+        downloadReportBtn.addEventListener('click', handleDownloadReport);
+    }
+    
     initialize();
 });

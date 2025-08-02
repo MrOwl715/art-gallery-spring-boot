@@ -3,6 +3,7 @@ package com.example.art_gal.repository;
 import com.example.art_gal.entity.ExportOrder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,4 +33,7 @@ public interface ExportOrderRepository extends JpaRepository<ExportOrder, Long> 
 
     List<ExportOrder> findByCustomerId(Long customerId);
     
+    @Query("SELECT e FROM ExportOrder e WHERE e.status = 'COMPLETED' AND FUNCTION('DATE', e.orderDate) BETWEEN :startDate AND :endDate ORDER BY e.orderDate ASC")
+    List<ExportOrder> findCompletedOrdersByDateRange(LocalDate startDate, LocalDate endDate);
+
 }

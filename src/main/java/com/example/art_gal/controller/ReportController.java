@@ -3,6 +3,7 @@ package com.example.art_gal.controller;
 import com.example.art_gal.service.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 
 @RestController
@@ -25,7 +27,10 @@ public class ReportController {
     private ReportService reportService;
 
     @GetMapping(value = "/download", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public ResponseEntity<InputStreamResource> downloadReport(@RequestParam("type") String type) throws IOException {
+    public ResponseEntity<InputStreamResource> downloadReport(
+            @RequestParam("type") String type,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) throws IOException {
         
         ByteArrayInputStream in = null;
         String filename = "";
@@ -38,8 +43,16 @@ public class ReportController {
         } else if ("revenue_overview".equalsIgnoreCase(type)) {
             in = reportService.generateRevenueOverviewReport();
             filename = "BaoCao_TongQuanDoanhThu_" + currentDateTime + ".xlsx";
-        } else {
-            // Xử lý các loại báo cáo khác nếu có
+        } 
+        // --- LOGIC MỚI ---
+        else if ("revenue_by_time".equalsIgnoreCase(type)) {
+            if (startDate == null || endDate == null) {
+                return ResponseEntity.badRequest().body(null); // Yêu cầu phải có ngày
+            }
+            in = reportService.generateRevenueByTimeReport(startDate, endDate);
+            filename = "BaoCao_DoanhThu_" + startDate + "_den_" + endDate + ".xlsx";
+        } 
+        else {
             return ResponseEntity.badRequest().build();
         }
 
@@ -52,4 +65,5 @@ public class ReportController {
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(new InputStreamResource(in));
     }
+
 }

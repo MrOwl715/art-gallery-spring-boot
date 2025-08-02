@@ -1,7 +1,9 @@
 package com.example.art_gal.service;
 
 import com.example.art_gal.dto.DashboardStatsDTO;
+import com.example.art_gal.entity.ExportOrder;
 import com.example.art_gal.entity.Painting;
+import com.example.art_gal.repository.ExportOrderRepository;
 import com.example.art_gal.repository.PaintingRepository;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -16,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -26,6 +29,9 @@ public class ReportService {
 
     @Autowired
     private PaintingRepository paintingRepository;
+
+    @Autowired
+    private ExportOrderRepository exportOrderRepository;
 
     public ByteArrayInputStream generateInventoryReport() throws IOException {
         String[] columns = {"ID", "Tên Tranh", "Giá Nhập", "Giá Bán", "Số Lượng Tồn", "Trạng Thái"};
@@ -109,4 +115,43 @@ public class ReportService {
             return new ByteArrayInputStream(out.toByteArray());
         }
     }
+
+    public ByteArrayInputStream generateRevenueByTimeReport(LocalDate startDate, LocalDate endDate) throws IOException {
+        String[] columns = {"ID Đơn Hàng", "Ngày Đặt", "Tên Khách Hàng", "Tổng Tiền"};
+        List<ExportOrder> orders = exportOrderRepository.findCompletedOrdersByDateRange(startDate, endDate);
+
+        try (
+                XSSFWorkbook workbook = new XSSFWorkbook();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ) {
+            XSSFSheet sheet = workbook.createSheet("DoanhThuTheoThoiGian");
+
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            CellStyle headerCellStyle = workbook.createCellStyle();
+            headerCellStyle.setFont(headerFont);
+
+            // Header
+            Row headerRow = sheet.createRow(0);
+            for (int col = 0; col < columns.length; col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(columns[col]);
+                cell.setCellStyle(headerCellStyle);
+            }
+
+            // Data
+            int rowIdx = 1;
+            for (ExportOrder order : orders) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(order.getId());
+                row.createCell(1).setCellValue(order.getOrderDate().toString());
+                row.createCell(2).setCellValue(order.getCustomer().getName());
+                row.createCell(3).setCellValue(order.getTotalAmount().doubleValue());
+            }
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        }
+    }
+
 }

@@ -1,9 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     
+    // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
     const token = localStorage.getItem('accessToken');
 
+    // --- BIẾN VÀ LẤY PHẦN TỬ DOM ---
     let salesChart, proportionChart;
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const mainContainer = document.querySelector('.main-container');
@@ -11,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportTypeSelect = document.getElementById('report-type');
     const downloadReportBtn = document.getElementById('download-report-btn');
 
+    // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
         if (!token) { window.location.href = '/dang-nhap.html'; return; }
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -31,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
+    // --- CÁC HÀM RENDER ---
     function renderKPIs(kpiData) {
         if (!kpiData) return;
         document.getElementById('kpi-total-orders').textContent = (kpiData.totalExportOrders || 0).toLocaleString('vi-VN');
@@ -40,18 +44,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function createCharts() {
+        // Biểu đồ Doanh thu
         const salesCtx = document.getElementById('salesChart').getContext('2d');
         salesChart = new Chart(salesCtx, {
             type: 'bar',
-            data: { labels: [], datasets: [{ label: 'Doanh thu', data: [], backgroundColor: 'rgba(249, 123, 34, 0.7)', borderRadius: 5 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: (value) => new Intl.NumberFormat('vi-VN').format(value) + '₫' } }, x: { grid: { display: false } } } }
+            data: {
+                labels: [],
+                datasets: [{ label: 'Doanh thu', data: [], backgroundColor: 'rgba(249, 123, 34, 0.7)', borderRadius: 5 }]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, 
+                scales: { y: { beginAtZero: true, ticks: { callback: (value) => new Intl.NumberFormat('vi-VN').format(value) + '₫' } }, x: { grid: { display: false } } } 
+            }
         });
 
+        // Biểu đồ Tỷ lệ bán chạy
         const proportionCtx = document.getElementById('proportionChart').getContext('2d');
         proportionChart = new Chart(proportionCtx, {
             type: 'doughnut',
-            data: { labels: [], datasets: [{ data: [], borderWidth: 0, backgroundColor: ['#fd7e14', '#20c997', '#0dcaf0', '#6c757d', '#ffc107', '#dc3545'] }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 15 } } } }
+            data: {
+                labels: [],
+                datasets: [{ 
+                    data: [], 
+                    borderWidth: 0, 
+                    backgroundColor: ['#fd7e14', '#20c997', '#0dcaf0', '#6c757d', '#ffc107', '#dc3545'] 
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { position: 'bottom', labels: { padding: 15 } } } 
+            }
         });
     }
 
@@ -69,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         proportionChart.update();
     }
     
+    // --- HÀM XỬ LÝ SỰ KIỆN ---
     async function handleSalesChartFilter(period) {
         try {
             const chartData = await fetchApi(`/dashboard/charts/${period}-revenue`);
@@ -80,16 +104,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
-    // --- HÀM MỚI: XỬ LÝ TẢI BÁO CÁO ---
+
+    // --- HÀM XỬ LÝ TẢI BÁO CÁO ---
     async function handleDownloadReport() {
         const reportType = reportTypeSelect.value;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
         if (!reportType) {
             alert("Vui lòng chọn loại báo cáo.");
             return;
         }
 
-        const url = `${API_BASE_URL}/reports/download?type=${reportType}`;
+        let url = `${API_BASE_URL}/reports/download?type=${reportType}`;
+
+        // Nếu là báo cáo theo thời gian, thêm tham số ngày
+        if (reportType === 'revenue_by_time') {
+            if (!startDate || !endDate) {
+                alert("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
+                return;
+            }
+            url += `&startDate=${startDate}&endDate=${endDate}`;
+        }
 
         try {
             const response = await fetch(url, {
@@ -106,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let filename = "report.xlsx";
             if (contentDisposition) {
                 const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-                if (filenameMatch.length > 1) {
+                if (filenameMatch && filenameMatch.length > 1) {
                     filename = filenameMatch[1];
                 }
             }
@@ -126,7 +162,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // --- HÀM XỬ LÝ HIỂN THỊ Ô CHỌN NGÀY ---
+    function toggleDateRangePicker() {
+        const reportType = reportTypeSelect.value;
+        const dateRangeWrapper = document.getElementById('date-range-wrapper');
+        if (reportType === 'revenue_by_time') {
+            dateRangeWrapper.classList.remove('d-none');
+        } else {
+            dateRangeWrapper.classList.add('d-none');
+        }
+    }
 
+    // --- KHỞI CHẠY LẦN ĐẦU ---
     async function initialize() {
         if(sidebarToggleBtn && mainContainer) {
             sidebarToggleBtn.addEventListener('click', () => mainContainer.classList.toggle('sidebar-collapsed'));
@@ -151,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // --- GẮN CÁC SỰ KIỆN ---
     if (salesChartFilter) {
         salesChartFilter.addEventListener('click', function(e) {
             const targetButton = e.target.closest('button');
@@ -159,14 +207,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 targetButton.classList.add('active');
                 const period = targetButton.dataset.period;
                 const apiPeriod = { day: 'daily', week: 'weekly', month: 'monthly', year: 'yearly' }[period];
-                handleSalesChartFilter(apiPeriod);
+                if(apiPeriod) {
+                    handleSalesChartFilter(apiPeriod);
+                }
             }
         });
     }
 
-    // Gắn sự kiện cho nút tải xuống
     if (downloadReportBtn) {
         downloadReportBtn.addEventListener('click', handleDownloadReport);
+    }
+    
+    if (reportTypeSelect) {
+        reportTypeSelect.addEventListener('change', toggleDateRangePicker);
     }
     
     initialize();

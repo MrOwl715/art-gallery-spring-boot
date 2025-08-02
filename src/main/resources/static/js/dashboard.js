@@ -6,15 +6,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('accessToken');
 
     // --- BIẾN VÀ LẤY PHẦN TỬ DOM ---
-    let salesChart, proportionChart; // Thêm biến cho biểu đồ mới
+    let salesChart, proportionChart;
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const mainContainer = document.querySelector('.main-container');
     const salesChartFilter = document.getElementById('sales-chart-filter');
-    const proportionChartFilter = document.getElementById('proportion-chart-filter');
     const reportTypeSelect = document.getElementById('report-type');
-    const dateRangeWrapper = document.getElementById('date-range-wrapper');
     const downloadReportBtn = document.getElementById('download-report-btn');
-
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
@@ -61,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // --- BỔ SUNG: TẠO BIỂU ĐỒ TỶ LỆ BÁN CHẠY ---
+        // Biểu đồ Tỷ lệ bán chạy
         const proportionCtx = document.getElementById('proportionChart').getContext('2d');
         proportionChart = new Chart(proportionCtx, {
             type: 'doughnut',
@@ -88,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
         salesChart.update();
     }
 
-    // --- BỔ SUNG: HÀM CẬP NHẬT BIỂU ĐỒ TỶ LỆ ---
     function updateProportionChart(chartData) {
         if (!chartData || !proportionChart) return;
         proportionChart.data.labels = chartData.labels;
@@ -109,6 +105,74 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // --- HÀM XỬ LÝ TẢI BÁO CÁO ---
+    async function handleDownloadReport() {
+        const reportType = reportTypeSelect.value;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
+        if (!reportType) {
+            alert("Vui lòng chọn loại báo cáo.");
+            return;
+        }
+
+        let url = `${API_BASE_URL}/reports/download?type=${reportType}`;
+
+        // Nếu là báo cáo theo thời gian, thêm tham số ngày
+        if (reportType === 'revenue_by_time') {
+            if (!startDate || !endDate) {
+                alert("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc.");
+                return;
+            }
+            url += `&startDate=${startDate}&endDate=${endDate}`;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                throw new Error('Tạo báo cáo thất bại.');
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = "report.xlsx";
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                if (filenameMatch && filenameMatch.length > 1) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+
+        } catch (error) {
+            console.error('Lỗi khi tải báo cáo:', error);
+            alert('Không thể tải báo cáo. Vui lòng thử lại.');
+        }
+    }
+
+    // --- HÀM XỬ LÝ HIỂN THỊ Ô CHỌN NGÀY ---
+    function toggleDateRangePicker() {
+        const reportType = reportTypeSelect.value;
+        const dateRangeWrapper = document.getElementById('date-range-wrapper');
+        if (reportType === 'revenue_by_time') {
+            dateRangeWrapper.classList.remove('d-none');
+        } else {
+            dateRangeWrapper.classList.add('d-none');
+        }
+    }
+
     // --- KHỞI CHẠY LẦN ĐẦU ---
     async function initialize() {
         if(sidebarToggleBtn && mainContainer) {
@@ -116,18 +180,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            // Tải song song tất cả các API ban đầu
             const [stats, weeklyRevenue, proportionData] = await Promise.all([
                 fetchApi('/dashboard/stats'),
                 fetchApi('/dashboard/charts/weekly-revenue'),
-                fetchApi('/dashboard/charts/proportion-by-category') // API mới
+                fetchApi('/dashboard/charts/proportion-by-category')
             ]);
             
             renderKPIs(stats);
-            createCharts(); // Tạo cả 2 biểu đồ
+            createCharts();
             updateSalesChart(weeklyRevenue);
-            updateProportionChart(proportionData); // Cập nhật biểu đồ mới
-
+            updateProportionChart(proportionData);
         } catch(error) {
             if (error.message !== 'Unauthorized') {
                 console.error("Lỗi tải dữ liệu dashboard:", error);
@@ -136,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // GẮN SỰ KIỆN CHO CÁC NÚT LỌC BIỂU ĐỒ
+    // --- GẮN CÁC SỰ KIỆN ---
     if (salesChartFilter) {
         salesChartFilter.addEventListener('click', function(e) {
             const targetButton = e.target.closest('button');
@@ -144,19 +206,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.querySelector('.active').classList.remove('active');
                 targetButton.classList.add('active');
                 const period = targetButton.dataset.period;
-                
-                let apiPeriod = period;
-                if (period === 'day') apiPeriod = 'daily';
-                if (period === 'week') apiPeriod = 'weekly';
-                if (period === 'month') apiPeriod = 'monthly';
-                if (period === 'year') apiPeriod = 'yearly';
-
-                handleSalesChartFilter(apiPeriod);
+                const apiPeriod = { day: 'daily', week: 'weekly', month: 'monthly', year: 'yearly' }[period];
+                if(apiPeriod) {
+                    handleSalesChartFilter(apiPeriod);
+                }
             }
         });
     }
-    
-    // (Phần xử lý sự kiện cho bộ lọc của biểu đồ tỷ lệ sẽ được thêm sau nếu cần)
 
+    if (downloadReportBtn) {
+        downloadReportBtn.addEventListener('click', handleDownloadReport);
+    }
+    
+    if (reportTypeSelect) {
+        reportTypeSelect.addEventListener('change', toggleDateRangePicker);
+    }
+    
     initialize();
 });

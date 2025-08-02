@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let allPaymentMethods = [];
     let cart = [];
     const TAX_RATE = 0;
+    let currentTotal = 0;
 
     // --- LẤY CÁC PHẦN TỬ DOM ---
     const productGrid = document.getElementById('product-grid');
@@ -23,12 +24,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const paymentMethodOptions = document.getElementById('payment-method-options');
     const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
     const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-    
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
     const addCustomerModal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
     const saveCustomerBtn = document.getElementById('save-customer-btn');
 
+    // --- DOM CHO SIDEBAR VÀ THANH TOÁN TIỀN MẶT ---
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    const mainContainer = document.querySelector('.main-container');
+    const cashReceivedInput = document.getElementById('cash-received');
+    const cashChangeEl = document.getElementById('cash-change');
+    const cashPaymentFields = document.getElementById('cash-payment-fields');
+    const qrPaymentFields = document.getElementById('qr-payment-fields');
+    const qrCodeImage = document.getElementById('qr-code-image');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
@@ -66,10 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="card-text text-muted small">SL: ${product.quantity}</p>
                         <div class="mt-auto d-flex justify-content-between align-items-center">
                             <span class="price">${formatCurrency(product.sellingPrice)}</span>
-                            <button class="btn btn-primary btn-sm add-to-cart-btn btn-icon" data-id="${product.id}" title="Thêm vào giỏ hàng" ${product.quantity === 0 ? 'disabled' : ''}>
+                            
+                        </div>
+                        <button class="btn btn-primary btn-sm add-to-cart-btn btn-icon" data-id="${product.id}" title="Thêm vào giỏ hàng" ${product.quantity === 0 ? 'disabled' : ''}>
                                 <i class="bi bi-cart-plus"></i>
                             </button>
-                        </div>
                     </div>
                 </div>`;
             productGrid.appendChild(card);
@@ -98,10 +105,17 @@ document.addEventListener('DOMContentLoaded', function() {
         paymentMethodOptions.innerHTML = '';
         methods.forEach((method, index) => {
              if (method.status) {
+                let iconHtml = '<i class="bi bi-credit-card fs-2"></i>';
+                if (method.method.toLowerCase().includes('tiền mặt')) {
+                    iconHtml = '<i class="bi bi-cash-coin fs-2"></i>';
+                } else if (method.qrCodeImageUrl) {
+                    iconHtml = `<img src="${method.qrCodeImageUrl}" height="32" alt="${method.method}">`;
+                }
+
                 paymentMethodOptions.innerHTML += `
                     <div class="col">
                         <div class="payment-method-card p-2 border rounded ${index === 0 ? 'active' : ''}" data-id="${method.id}">
-                            <i class="bi bi-credit-card fs-2"></i>
+                            ${iconHtml}
                             <div class="small mt-1">${method.method}</div>
                         </div>
                     </div>`;
@@ -134,12 +148,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateTotals = () => {
         const subtotal = cart.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
         const tax = subtotal * TAX_RATE;
-        const total = subtotal + tax;
+        currentTotal = subtotal + tax;
         subtotalAmountEl.textContent = formatCurrency(subtotal);
         taxAmountEl.textContent = formatCurrency(tax);
-        totalAmountEl.textContent = formatCurrency(total);
-        document.getElementById('modal-payment-total').textContent = formatCurrency(total);
+        totalAmountEl.textContent = formatCurrency(currentTotal);
+        document.getElementById('modal-payment-total').textContent = formatCurrency(currentTotal);
     };
+
+    function calculateChange() {
+        const cashReceived = parseFloat(cashReceivedInput.value);
+        if (isNaN(cashReceived) || cashReceived < currentTotal) {
+            cashChangeEl.textContent = formatCurrency(0);
+            return;
+        }
+        const change = cashReceived - currentTotal;
+        cashChangeEl.textContent = formatCurrency(change);
+    }
+
+    function handlePaymentMethodChange(selectedCard) {
+        if (!selectedCard) return;
+
+        const currentActive = paymentMethodOptions.querySelector('.active');
+        if (currentActive) currentActive.classList.remove('active');
+        selectedCard.classList.add('active');
+
+        const methodId = selectedCard.dataset.id;
+        const method = allPaymentMethods.find(m => m.id == methodId);
+
+        if (method && method.method.toLowerCase().includes('tiền mặt')) {
+            cashPaymentFields.classList.remove('d-none');
+            qrPaymentFields.classList.add('d-none');
+            cashReceivedInput.value = '';
+            cashChangeEl.textContent = formatCurrency(0);
+        } else {
+            cashPaymentFields.classList.add('d-none');
+            qrPaymentFields.classList.remove('d-none');
+            qrCodeImage.src = method ? (method.qrCodeImageUrl || '') : '';
+        }
+    }
 
     function handleAddToCart(productId) {
         const productInStock = allPaintings.find(p => p.id == productId);
@@ -168,14 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleSaveNewCustomer() {
         const name = document.getElementById('customer-name').value.trim();
         const phone = document.getElementById('customer-phone').value.trim();
-        if (!name || !phone) {
-            alert('Vui lòng nhập đầy đủ Họ tên và Số điện thoại.'); return;
+        if (!name) {
+            alert('Vui lòng nhập họ tên khách hàng.');
+            return;
         }
         
         try {
+            const newCustomerData = { name: name, phone: phone, status: true };
             const newCustomer = await fetchApi('/customers', {
                 method: 'POST',
-                body: JSON.stringify({ name, phone, status: true })
+                body: JSON.stringify(newCustomerData)
             });
 
             allCustomers = await fetchApi('/customers');
@@ -186,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('add-customer-form').reset();
             alert(`Đã thêm khách hàng "${name}" thành công.`);
         } catch (error) {
-            alert(`Lỗi: ${error.message}`);
+            alert(`Lỗi khi thêm khách hàng: ${error.message}`);
         }
     }
     
@@ -194,12 +242,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cart.length === 0) { alert('Giỏ hàng trống!'); return; }
         const selectedCustomer = customerSelect.value;
         if (!selectedCustomer) { alert('Vui lòng chọn khách hàng.'); return; }
-        const selectedPaymentMethod = paymentMethodOptions.querySelector('.active');
-        if (!selectedPaymentMethod) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
+        const selectedPaymentMethodCard = paymentMethodOptions.querySelector('.active');
+        if (!selectedPaymentMethodCard) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
         
+        const methodId = selectedPaymentMethodCard.dataset.id;
+        const method = allPaymentMethods.find(m => m.id == methodId);
+
+        if (method && method.method.toLowerCase().includes('tiền mặt')) {
+            const cashReceived = parseFloat(cashReceivedInput.value);
+            if (isNaN(cashReceived) || cashReceived < currentTotal) {
+                alert('Số tiền khách đưa không đủ hoặc không hợp lệ.');
+                return;
+            }
+        }
+
         const orderData = {
             customerId: selectedCustomer,
-            paymentMethodId: selectedPaymentMethod.dataset.id,
+            paymentMethodId: methodId,
             orderDetails: cart.map(item => ({ paintingId: item.id, quantity: item.quantity }))
         };
         
@@ -253,6 +312,9 @@ document.addEventListener('DOMContentLoaded', function() {
             renderCategoryFilters(allCategories);
             renderCustomerDropdown(allCustomers);
             renderPaymentMethods(allPaymentMethods);
+
+            handlePaymentMethodChange(paymentMethodOptions.querySelector('.payment-method-card'));
+
         } catch (error) {
             console.error("Lỗi tải dữ liệu ban đầu:", error);
             alert("Không thể tải dữ liệu cần thiết cho trang bán hàng.");
@@ -281,19 +343,23 @@ document.addEventListener('DOMContentLoaded', function() {
             renderPaintings(filteredPaintings);
         }
     });
+
     paymentMethodOptions.addEventListener('click', (e) => {
-        const selectedMethod = e.target.closest('.payment-method-card');
-        if (selectedMethod && !selectedMethod.classList.contains('active')) {
-            paymentMethodOptions.querySelector('.active').classList.remove('active');
-            selectedMethod.classList.add('active');
-        }
+        const selectedCard = e.target.closest('.payment-method-card');
+        handlePaymentMethodChange(selectedCard);
     });
+
+    cashReceivedInput.addEventListener('input', calculateChange);
     confirmPaymentBtn.addEventListener('click', handleConfirmPayment);
-    
-    sidebarToggleBtn.addEventListener('click', () => {
-        mainContainer.classList.toggle('sidebar-collapsed');
-    });
     saveCustomerBtn.addEventListener('click', handleSaveNewCustomer);
     
+    // --- PHẦN CODE BỊ THIẾU ĐƯỢC THÊM LẠI ---
+    if (sidebarToggleBtn && mainContainer) {
+        sidebarToggleBtn.addEventListener('click', () => {
+            mainContainer.classList.toggle('sidebar-collapsed');
+        });
+    }
+    
+    // --- KHỞI CHẠY ---
     loadInitialData();
 });

@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const orderDetailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
     const saveStatusBtn = document.getElementById('save-status-btn');
     
+    // --- DOM CHO TÌM KIẾM ---
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const dateFilter = document.getElementById('date-filter');
+    const searchBtn = document.getElementById('search-btn');
+    
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -68,6 +74,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --- HÀM LỌC VÀ TÌM KIẾM ---
+    function filterAndRenderOrders() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const statusValue = statusFilter.value;
+        const dateValue = dateFilter.value;
+
+        let filteredOrders = allExportOrders;
+
+        // Lọc theo trạng thái
+        if (statusValue !== 'ALL') {
+            filteredOrders = filteredOrders.filter(order => order.status === statusValue);
+        }
+
+        // Lọc theo ngày
+        if (dateValue) {
+            filteredOrders = filteredOrders.filter(order => {
+                const orderDate = new Date(order.orderDate).toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+                return orderDate === dateValue;
+            });
+        }
+
+        // Lọc theo từ khóa tìm kiếm
+        if (searchTerm) {
+            filteredOrders = filteredOrders.filter(order =>
+                order.id.toString().includes(searchTerm) ||
+                (order.customerName && order.customerName.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        renderOrders(filteredOrders);
+    }
+
     // --- HÀM XỬ LÝ LOGIC ---
     function showOrderDetail(orderId) {
         const order = allExportOrders.find(o => o.id == orderId);
@@ -103,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadOrders() {
         try {
             allExportOrders = await fetchApi('/export-orders');
-            renderOrders(allExportOrders);
+            filterAndRenderOrders(); // Thay vì renderOrders, gọi hàm filter để hiển thị ban đầu
         } catch (error) {
             console.error(error);
             ordersTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-5">Không thể tải dữ liệu đơn hàng.</td></tr>';
@@ -117,6 +155,16 @@ document.addEventListener('DOMContentLoaded', function() {
             showOrderDetail(viewBtn.dataset.id);
         }
     });
+
+    // Gắn sự kiện cho nút tìm kiếm và các bộ lọc
+    searchBtn.addEventListener('click', filterAndRenderOrders);
+    searchInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+            filterAndRenderOrders();
+        }
+    });
+    statusFilter.addEventListener('change', filterAndRenderOrders);
+    dateFilter.addEventListener('change', filterAndRenderOrders);
 
     // --- KHỞI CHẠY ---
     loadOrders();

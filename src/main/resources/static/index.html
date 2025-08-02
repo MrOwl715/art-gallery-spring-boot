@@ -14,7 +14,7 @@
 </head>
 <body class="preload">
 
-    <header class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+<header class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
     <div class="container-fluid">
         <button class="btn btn-light me-2" type="button" id="sidebar-toggle-btn">
             <i class="bi bi-list fs-5"></i>
@@ -22,6 +22,22 @@
         <a class="navbar-brand fw-bold text-primary" href="index.html">ArtGallery POS</a>
         
         <div class="ms-auto d-flex align-items-center">
+            <div class="dropdown me-3">
+                <a href="#" class="nav-link" data-bs-toggle="dropdown" aria-expanded="false" id="activity-log-toggle">
+                    <i class="bi bi-bell fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none" id="activity-log-badge">
+                        <span class="visually-hidden">New alerts</span>
+                    </span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="width: 350px;" id="activity-log-dropdown">
+                    <div class="dropdown-header d-flex justify-content-between align-items-center">
+                        <h6 class="m-0">Nhật ký hoạt động</h6>
+                        <a class="small" href="#">Xem tất cả</a>
+                    </div>
+                    <div id="activity-log-list" class="list-group list-group-flush">
+                        </div>
+                </div>
+            </div>
             <div class="dropdown">
                 <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" width="38" height="38" class="rounded-circle">
@@ -47,7 +63,7 @@
     <div class="main-container d-flex">
         <nav class="main-sidebar d-flex flex-column p-3" id="main-sidebar">
             <ul class="nav nav-pills flex-column mb-auto">
-                <li><a href="index.html" class="nav-link active"><i class="bi bi-house-door me-2"></i> Tổng quan</a></li>
+                <li id="menu-dashboard"><a href="index.html" class="nav-link active"><i class="bi bi-house-door me-2"></i> Tổng quan</a></li>
                 <li><a href="ban-hang.html" class="nav-link text-dark"><i class="bi bi-cart4 me-2"></i> Bán hàng</a></li>
                 <li class="nav-item mt-3"><h6 class="text-muted small text-uppercase">Quản lý</h6></li>
                 <li><a href="quan-ly-don-hang.html" class="nav-link text-dark"><i class="bi bi-box-seam me-2"></i> Đơn hàng</a></li>
@@ -124,6 +140,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/vi.js"></script>
+    <script>moment.locale('vi');</script>
     <script src="js/dashboard.js"></script>
     <script src="js/global-effects.js" defer></script>
 </body>

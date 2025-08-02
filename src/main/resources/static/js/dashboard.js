@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const salesChartFilter = document.getElementById('sales-chart-filter');
     const reportTypeSelect = document.getElementById('report-type');
     const downloadReportBtn = document.getElementById('download-report-btn');
+    const activityLogList = document.getElementById('activity-log-list');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
@@ -42,6 +43,35 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('kpi-inventory').textContent = (kpiData.totalInventory || 0).toLocaleString('vi-VN');
         document.getElementById('kpi-profit').textContent = formatCurrency(kpiData.totalProfit || 0);
     }
+    
+    // --- HÀM MỚI: RENDER ACTIVITY LOG ---
+    function renderActivityLogs(logs) {
+        activityLogList.innerHTML = ''; // Xóa nội dung cũ
+        if (!logs || logs.length === 0) {
+            activityLogList.innerHTML = '<div class="list-group-item text-muted text-center small p-3">Không có hoạt động nào gần đây.</div>';
+            return;
+        }
+
+        // Chỉ hiển thị 5 hoạt động gần nhất
+        logs.slice(0, 5).forEach(log => {
+            const logItem = document.createElement('a');
+            logItem.href = "#";
+            logItem.className = 'list-group-item list-group-item-action';
+            
+            const timeAgo = moment(log.createdAt).fromNow(); // Sử dụng moment.js để hiển thị "cách đây..."
+
+            logItem.innerHTML = `
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1 small">${log.action}</h6>
+                    <small class="text-muted">${timeAgo}</small>
+                </div>
+                <p class="mb-1 small text-muted">${log.details}</p>
+                <small class="text-muted">Bởi: ${log.actor}</small>
+            `;
+            activityLogList.appendChild(logItem);
+        });
+    }
+
 
     function createCharts() {
         // Biểu đồ Doanh thu
@@ -180,16 +210,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const [stats, weeklyRevenue, proportionData] = await Promise.all([
+            const [stats, weeklyRevenue, proportionData, activityLogs] = await Promise.all([
                 fetchApi('/dashboard/stats'),
                 fetchApi('/dashboard/charts/weekly-revenue'),
-                fetchApi('/dashboard/charts/proportion-by-category')
+                fetchApi('/dashboard/charts/proportion-by-category'),
+                fetchApi('/activity-logs') // Tải activity logs
             ]);
             
             renderKPIs(stats);
             createCharts();
             updateSalesChart(weeklyRevenue);
             updateProportionChart(proportionData);
+            renderActivityLogs(activityLogs); // Render activity logs
+
         } catch(error) {
             if (error.message !== 'Unauthorized') {
                 console.error("Lỗi tải dữ liệu dashboard:", error);
@@ -224,3 +257,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     initialize();
 });
+
+// Thêm thư viện moment.js để format thời gian
+// Bạn cần thêm dòng này vào cuối file index.html, trước thẻ </body>
+// <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+// <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/vi.js"></script>
+// <script>moment.locale('vi');</script>

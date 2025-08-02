@@ -68,10 +68,12 @@ public class SecurityConfig {
                             "/uploads/**",
                             "/dang-nhap.html", 
                             "/", "/index.html",
-                            "/*.html")
+                            "/*.html",
+                            "/favicon.ico"
+                            )
                         .permitAll()
-                        .requestMatchers("/api/**").authenticated() // Bắt buộc xác thực cho các API còn lại
-
+                        .requestMatchers("/api/activity-logs").authenticated()
+                        .requestMatchers("/api/**").authenticated() 
                         .anyRequest().authenticated());
         // Thêm một lớp Filter kiểm tra JWT
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

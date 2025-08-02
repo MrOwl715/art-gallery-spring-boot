@@ -73,6 +73,7 @@ function checkUserRoleAndApplyUI() {
             const paymentMenuItem = document.getElementById('menu-thanh-toan');
             const accountMenuItem = document.getElementById('menu-tai-khoan');
             const textHethong = document.getElementById('text-hethong');
+            const dashboard = document.getElementById('menu-dashboard')
             if (paymentMenuItem) {
                 paymentMenuItem.style.display = 'none';
             }
@@ -81,6 +82,9 @@ function checkUserRoleAndApplyUI() {
             }
             if (textHethong) {
                 textHethong.style.display = 'none';
+            }
+            if (dashboard) {
+                dashboard.style.display = 'none';
             }
         }
     } catch (e) {

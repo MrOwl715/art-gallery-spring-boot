@@ -25,23 +25,41 @@
         
         <div class="ms-auto d-flex align-items-center">
             <div class="dropdown">
-                <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" width="38" height="38" class="rounded-circle">
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end text-small shadow-sm">
-                    <li>
-                        <h6 class="dropdown-header">
-                            Quang Đẹp Zai
-                            <div class="small text-muted">Quản trị viên</div>
-                        </h6>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="thong-tin-ca-nhan.html"><i class="bi bi-person me-2"></i>Thông tin cá nhân</a></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="#"><i class="bi bi-gear me-2"></i>Cài đặt</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item d-flex align-items-center text-danger" href="dang-nhap.html"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
-                </ul>
-            </div>
+                    <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" width="38" height="38"
+                            class="rounded-circle">
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end text-small shadow-sm">
+                        <li>
+                            <h6 class="dropdown-header">
+                                <span id="user-fullname-header">Đang tải...</span>
+                                <div class="small text-muted" id="user-role-header"></div>
+                            </h6>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="thong-tin-ca-nhan.html">
+                                <i class="bi bi-person me-2"></i>Thông tin cá nhân
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="#">
+                                <i class="bi bi-gear me-2"></i>Cài đặt
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center text-danger" href="#" id="logout-btn">
+                                <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
+                </div>
         </div>
     </div>
     </header>

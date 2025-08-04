@@ -7,8 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- BIẾN VÀ LẤY PHẦN TỬ DOM ---
     let salesChart, proportionChart;
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
+
     const salesChartFilter = document.getElementById('sales-chart-filter');
     const reportTypeSelect = document.getElementById('report-type');
     const downloadReportBtn = document.getElementById('download-report-btn');
@@ -205,10 +204,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- KHỞI CHẠY LẦN ĐẦU ---
     async function initialize() {
-        if(sidebarToggleBtn && mainContainer) {
-            sidebarToggleBtn.addEventListener('click', () => mainContainer.classList.toggle('sidebar-collapsed'));
-        }
-
         try {
             const [stats, weeklyRevenue, proportionData, activityLogs] = await Promise.all([
                 fetchApi('/dashboard/stats'),

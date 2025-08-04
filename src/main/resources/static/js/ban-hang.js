@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let allCustomers = [];
     let allPaymentMethods = [];
     let cart = [];
-    const TAX_RATE = 0;
+    const TAX_RATE = 0.08; // <<< THAY ĐỔI Ở ĐÂY: TỪ 0 SANG 0.08
     let currentTotal = 0;
 
     // --- LẤY CÁC PHẦN TỬ DOM ---
@@ -27,9 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const addCustomerModal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
     const saveCustomerBtn = document.getElementById('save-customer-btn');
 
-    // --- DOM CHO SIDEBAR VÀ THANH TOÁN TIỀN MẶT ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
+    // DOM CHO SIDEBAR VÀ THANH TOÁN TIỀN MẶT ---
     const cashReceivedInput = document.getElementById('cash-received');
     const cashChangeEl = document.getElementById('cash-change');
     const cashPaymentFields = document.getElementById('cash-payment-fields');
@@ -239,64 +237,70 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function handleConfirmPayment() {
-        if (cart.length === 0) { alert('Giỏ hàng trống!'); return; }
-        const selectedCustomer = customerSelect.value;
-        if (!selectedCustomer) { alert('Vui lòng chọn khách hàng.'); return; }
-        const selectedPaymentMethodCard = paymentMethodOptions.querySelector('.active');
-        if (!selectedPaymentMethodCard) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
-        
-        const methodId = selectedPaymentMethodCard.dataset.id;
-        const method = allPaymentMethods.find(m => m.id == methodId);
+    if (cart.length === 0) { alert('Giỏ hàng trống!'); return; }
+    const selectedCustomer = customerSelect.value;
+    if (!selectedCustomer) { alert('Vui lòng chọn khách hàng.'); return; }
+    const selectedPaymentMethodCard = paymentMethodOptions.querySelector('.active');
+    if (!selectedPaymentMethodCard) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
+    
+    const methodId = selectedPaymentMethodCard.dataset.id;
+    const method = allPaymentMethods.find(m => m.id == methodId);
 
-        if (method && method.method.toLowerCase().includes('tiền mặt')) {
-            const cashReceived = parseFloat(cashReceivedInput.value);
-            if (isNaN(cashReceived) || cashReceived < currentTotal) {
-                alert('Số tiền khách đưa không đủ hoặc không hợp lệ.');
-                return;
-            }
-        }
-
-        const orderData = {
-            customerId: selectedCustomer,
-            paymentMethodId: methodId,
-            orderDetails: cart.map(item => ({ paintingId: item.id, quantity: item.quantity }))
-        };
-        
-        try {
-            const createdOrder = await fetchApi('/export-orders', {
-                method: 'POST',
-                body: JSON.stringify(orderData)
-            });
-
-            alert('Tạo đơn hàng thành công!');
-            
-            const subtotal = createdOrder.totalAmount / (1 + TAX_RATE);
-            const tax = createdOrder.totalAmount - subtotal;
-            const dataForPrint = {
-                id: createdOrder.id,
-                date: new Date(createdOrder.orderDate).toLocaleString('vi-VN'),
-                items: createdOrder.orderDetails.map(detail => ({
-                    name: detail.paintingName,
-                    quantity: detail.quantity,
-                    price: detail.price
-                })),
-                subtotal: subtotal,
-                tax: tax,
-                total: createdOrder.totalAmount
-            };
-
-            localStorage.setItem('currentOrderForPrint', JSON.stringify(dataForPrint));
-            window.open('hoa-don.html', '_blank', 'width=350,height=600');
-
-            paymentModal.hide();
-            cart = [];
-            renderCart();
-            loadInitialData();
-
-        } catch (error) {
-            alert(`Lỗi tạo đơn hàng: ${error.message}`);
+    if (method && method.method.toLowerCase().includes('tiền mặt')) {
+        const cashReceived = parseFloat(cashReceivedInput.value);
+        if (isNaN(cashReceived) || cashReceived < currentTotal) {
+            alert('Số tiền khách đưa không đủ hoặc không hợp lệ.');
+            return;
         }
     }
+
+    const orderData = {
+        customerId: selectedCustomer,
+        paymentMethodId: methodId,
+        orderDetails: cart.map(item => ({ paintingId: item.id, quantity: item.quantity }))
+    };
+    
+    try {
+        const createdOrder = await fetchApi('/export-orders', {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+
+        alert('Tạo đơn hàng thành công!');
+        
+        // ---- BẮT ĐẦU SỬA LỖI TÍNH TOÁN HÓA ĐƠN ----
+        // 1. Tính Tạm tính (subtotal) từ chi tiết đơn hàng
+        const subtotal = createdOrder.orderDetails.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        // 2. Tính Thuế từ Tạm tính
+        const tax = subtotal * TAX_RATE;
+
+        const dataForPrint = {
+            id: createdOrder.id,
+            date: new Date(createdOrder.orderDate).toLocaleString('vi-VN'),
+            items: createdOrder.orderDetails.map(detail => ({
+                name: detail.paintingName,
+                quantity: detail.quantity,
+                price: detail.price
+            })),
+            subtotal: subtotal, // Dùng Tạm tính vừa tính
+            tax: tax,           // Dùng Thuế vừa tính
+            total: createdOrder.totalAmount // Lấy tổng cuối cùng từ server
+        };
+        // ---- KẾT THÚC SỬA LỖI ----
+
+        localStorage.setItem('currentOrderForPrint', JSON.stringify(dataForPrint));
+        window.open('hoa-don.html', '_blank', 'width=350,height=600');
+
+        paymentModal.hide();
+        cart = [];
+        renderCart();
+        loadInitialData();
+
+    } catch (error) {
+        alert(`Lỗi tạo đơn hàng: ${error.message}`);
+    }
+}
     
     // --- KHỞI CHẠY & GẮN SỰ KIỆN ---
     async function loadInitialData() {
@@ -352,13 +356,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cashReceivedInput.addEventListener('input', calculateChange);
     confirmPaymentBtn.addEventListener('click', handleConfirmPayment);
     saveCustomerBtn.addEventListener('click', handleSaveNewCustomer);
-    
-    // --- PHẦN CODE BỊ THIẾU ĐƯỢC THÊM LẠI ---
-    if (sidebarToggleBtn && mainContainer) {
-        sidebarToggleBtn.addEventListener('click', () => {
-            mainContainer.classList.toggle('sidebar-collapsed');
-        });
-    }
     
     // --- KHỞI CHẠY ---
     loadInitialData();

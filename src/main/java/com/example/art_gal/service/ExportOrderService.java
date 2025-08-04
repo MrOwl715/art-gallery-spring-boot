@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode; // Thêm import này
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,9 @@ public class ExportOrderService {
     @Autowired private PaymentMethodRepository paymentMethodRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private ActivityLogService activityLogService;
+
+    // Thêm hằng số thuế
+    private static final BigDecimal TAX_RATE = new BigDecimal("0.08");
 
     @Transactional
     public ExportOrderDTO createExportOrder(ExportOrderDTO orderDTO) {
@@ -41,7 +45,7 @@ public class ExportOrderService {
         order.setOrderDate(LocalDateTime.now());
         order.setStatus(OrderStatus.COMPLETED);
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal subTotal = BigDecimal.ZERO; // Đổi tên biến để rõ ràng hơn
         List<ExportOrderDetail> detailEntities = new ArrayList<>();
 
         for (ExportOrderDetailDTO detailDTO : orderDTO.getOrderDetails()) {
@@ -54,13 +58,13 @@ public class ExportOrderService {
             int newQuantity = painting.getQuantity() - detailDTO.getQuantity();
             painting.setQuantity(newQuantity);
 
-            // Nếu bán hết, chuyển trạng thái thành Đã bán
             if (newQuantity == 0) {
                 painting.setStatus(PaintingStatus.SOLD);
             }
 
             BigDecimal sellingPrice = painting.getSellingPrice();
-            totalAmount = totalAmount.add(sellingPrice.multiply(BigDecimal.valueOf(detailDTO.getQuantity())));
+            // Cộng dồn vào Tạm tính (chưa thuế)
+            subTotal = subTotal.add(sellingPrice.multiply(BigDecimal.valueOf(detailDTO.getQuantity())));
 
             ExportOrderDetail detail = new ExportOrderDetail();
             detail.setExportOrder(order);
@@ -70,7 +74,11 @@ public class ExportOrderService {
             detailEntities.add(detail);
         }
 
-        order.setTotalAmount(totalAmount);
+        // TÍNH TOÁN LẠI TỔNG TIỀN CUỐI CÙNG
+        BigDecimal taxAmount = subTotal.multiply(TAX_RATE);
+        BigDecimal totalAmount = subTotal.add(taxAmount).setScale(0, RoundingMode.HALF_UP); // Làm tròn đến số nguyên gần nhất
+
+        order.setTotalAmount(totalAmount); // Gán tổng tiền ĐÃ BAO GỒM THUẾ
         order.setOrderDetails(detailEntities);
 
         ExportOrder savedOrder = exportOrderRepository.save(order);
@@ -79,7 +87,8 @@ public class ExportOrderService {
 
         return convertToDTO(savedOrder);
     }
-
+    
+    // ... các hàm còn lại không đổi
     public List<ExportOrderDTO> getAllExportOrders() {
         return exportOrderRepository.findAll().stream()
                 .map(this::convertToDTO)

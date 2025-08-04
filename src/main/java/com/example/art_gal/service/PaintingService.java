@@ -11,7 +11,7 @@ import com.example.art_gal.repository.PaintingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.art_gal.entity.PaintingStatus;
+
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -51,46 +51,45 @@ document.addEventListener('DOMContentLoaded', function () {
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]');
 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 
+// Tìm đến hàm này trong file js/global-effects.js
+
 function checkUserRoleAndApplyUI() {
     const token = localStorage.getItem('accessToken');
+    const isLoginPage = window.location.pathname.endsWith('/dang-nhap.html');
 
-    // Nếu không có token, chuyển về trang đăng nhập
-    if (!token && window.location.pathname !== '/dang-nhap.html') {
+    // Nếu không có token và người dùng không ở trang đăng nhập,
+    // thì mới chuyển hướng họ về trang đăng nhập.
+    if (!token && !isLoginPage) {
         window.location.href = '/dang-nhap.html';
         return;
     }
 
-    try {
-        // Giải mã phần payload của JWT
-        const payloadBase64 = token.split('.')[1];
-        const decodedPayload = atob(payloadBase64);
-        const payload = JSON.parse(decodedPayload);
+    // Nếu có token, tiếp tục thực hiện logic giải mã và phân quyền như cũ
+    if (token) {
+        try {
+            const payloadBase64 = token.split('.')[1];
+            const decodedPayload = atob(payloadBase64);
+            const payload = JSON.parse(decodedPayload);
+            const userRoles = payload.roles;
 
-        const userRoles = payload.roles; // Lấy chuỗi roles, ví dụ: "ROLE_MANAGER" hoặc "ROLE_STAFF"
-
-        // Nếu người dùng là STAFF, ẩn các mục menu của Manager
-        if (userRoles && userRoles.includes('ROLE_STAFF')) {
-            const paymentMenuItem = document.getElementById('menu-thanh-toan');
-            const accountMenuItem = document.getElementById('menu-tai-khoan');
-            const textHethong = document.getElementById('text-hethong');
-            const dashboard = document.getElementById('menu-dashboard')
-            if (paymentMenuItem) {
-                paymentMenuItem.style.display = 'none';
+            if (userRoles && userRoles.includes('ROLE_STAFF')) {
+                const paymentMenuItem = document.getElementById('menu-thanh-toan');
+                const accountMenuItem = document.getElementById('menu-tai-khoan');
+                const textHethong = document.getElementById('text-hethong');
+                const dashboard = document.getElementById('menu-dashboard');
+                if (paymentMenuItem) paymentMenuItem.style.display = 'none';
+                if (accountMenuItem) accountMenuItem.style.display = 'none';
+                if (textHethong) textHethong.style.display = 'none';
+                if (dashboard) dashboard.style.display = 'none';
             }
-            if (accountMenuItem) {
-                accountMenuItem.style.display = 'none';
-            }
-            if (textHethong) {
-                textHethong.style.display = 'none';
-            }
-            if (dashboard) {
-                dashboard.style.display = 'none';
+        } catch (e) {
+            console.error('Lỗi giải mã token hoặc áp dụng UI:', e);
+            // Nếu token không hợp lệ, xóa và về trang đăng nhập
+            localStorage.clear();
+            // *** CHỈ CHUYỂN HƯỚNG NẾU KHÔNG PHẢI ĐANG Ở TRANG ĐĂNG NHẬP ***
+            if (!window.location.pathname.endsWith('/dang-nhap.html')) {
+                window.location.href = '/dang-nhap.html';
             }
         }
-    } catch (e) {
-        console.error('Lỗi giải mã token hoặc áp dụng UI:', e);
-        // Nếu token không hợp lệ, xóa và về trang đăng nhập
-        localStorage.clear();
-        window.location.href = '/dang-nhap.html';
     }
 }

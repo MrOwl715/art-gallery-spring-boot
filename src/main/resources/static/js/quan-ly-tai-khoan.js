@@ -63,8 +63,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // HÀM NÀY ĐÃ ĐƯỢC CẬP NHẬT HOÀN TOÀN
     async function handleAddAccount(event) {
         event.preventDefault();
+        const errorMessageDiv = document.getElementById('add-account-error-message');
+        // Ẩn thông báo lỗi cũ khi người dùng thử lại
+        errorMessageDiv.classList.add('d-none');
+        errorMessageDiv.innerHTML = '';
+
+
         const accountData = {
             fullName: document.getElementById('add-fullname').value,
             username: document.getElementById('add-username').value,
@@ -72,17 +79,42 @@ document.addEventListener('DOMContentLoaded', function () {
             email: document.getElementById('add-email').value,
             role: document.getElementById('add-role').value
         };
+
         try {
-            // ### SỬA LẠI URL Ở ĐÂY ###
-            await fetchApi('/users', {
+            // Chúng ta sẽ trực tiếp gọi fetch ở đây để xử lý lỗi tốt hơn
+            const response = await fetch(`${API_BASE_URL}/users`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(accountData)
             });
+
+            // Nếu request không thành công (lỗi 4xx, 5xx)
+            if (!response.ok) {
+                const errorData = await response.json();
+                // Ném lỗi để khối catch bên dưới có thể bắt được
+                throw errorData; 
+            }
+
+            // Nếu thành công
             addAccountModal.hide();
             document.getElementById('add-account-form').reset();
             loadAccounts();
+
         } catch (error) {
-            alert(`Tạo tài khoản thất bại: ${error.message}`);
+            // Khối catch này sẽ nhận được object lỗi từ backend
+            let messages = [];
+            // Nếu có danh sách lỗi chi tiết của từng trường
+            if (error.errors) {
+                for (const field in error.errors) {
+                    messages.push(`<li>${error.errors[field]}</li>`);
+                }
+                errorMessageDiv.innerHTML = `<strong>${error.message}</strong><ul>${messages.join('')}</ul>`;
+            } else {
+                // Nếu chỉ có lỗi chung (ví dụ: email/username đã tồn tại)
+                errorMessageDiv.textContent = error.message || 'Tạo tài khoản thất bại. Vui lòng thử lại.';
+            }
+            // Hiển thị vùng báo lỗi
+            errorMessageDiv.classList.remove('d-none');
         }
     }
 

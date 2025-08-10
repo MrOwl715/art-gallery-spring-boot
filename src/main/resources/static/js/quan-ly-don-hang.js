@@ -3,28 +3,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    // --- BIẾN LƯU TRỮ ---
-    let allExportOrders = [];
-
-    // --- LẤY CÁC PHẦN TỬ DOM ---
-    const ordersTableBody = document.getElementById('orders-table-body');
-    const orderDetailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
-    const saveStatusBtn = document.getElementById('save-status-btn');
-    
-    // --- DOM CHO TÌM KIẾM ---
-    const searchInput = document.getElementById('search-input');
-    const statusFilter = document.getElementById('status-filter');
-    const dateFilter = document.getElementById('date-filter');
     const searchBtn = document.getElementById('search-btn');
     
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+            headers
         });
+
         if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
         if (!response.ok) {
             const errorData = await response.json();

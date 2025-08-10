@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
@@ -133,10 +134,8 @@ async function updateUserInfoHeader() {
             const user = await response.json();
             userFullNameElement.textContent = user.fullName;
             userRoleElement.textContent = user.role === 'MANAGER' ? 'Quản trị viên' : 'Nhân viên';
-        } else if (response.status === 401 || response.status === 403) {
-            // Nếu token không hợp lệ, xóa và về trang đăng nhập
-            localStorage.clear();
-            window.location.href = '/dang-nhap.html';
+        } else {
+            console.error(`Lỗi từ API: ${response.status}`);
         }
     } catch (error) {
         console.error('Lỗi khi lấy thông tin người dùng:', error);

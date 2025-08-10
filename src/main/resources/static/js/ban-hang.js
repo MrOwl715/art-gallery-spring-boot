@@ -3,14 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- CẤU HÌNH API & BIẾN TOÀN CỤC ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    let allPaintings = [];
-    let allCategories = [];
-    let allCustomers = [];
-    let allPaymentMethods = [];
-    let cart = [];
-    const TAX_RATE = 0.08; // <<< THAY ĐỔI Ở ĐÂY: TỪ 0 SANG 0.08
     let currentTotal = 0;
 
     // --- LẤY CÁC PHẦN TỬ DOM ---
@@ -36,10 +28,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+            headers
         });
+
         if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
         if (!response.ok) {
             const errorData = await response.json();
@@ -320,8 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
             handlePaymentMethodChange(paymentMethodOptions.querySelector('.payment-method-card'));
 
         } catch (error) {
-            console.error("Lỗi tải dữ liệu ban đầu:", error);
-            alert("Không thể tải dữ liệu cần thiết cho trang bán hàng.");
+            console.error('Error loading initial data:', error);
         }
     }
 

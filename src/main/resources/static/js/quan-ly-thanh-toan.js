@@ -3,25 +3,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    // --- LẤY CÁC PHẦN TỬ DOM ---
-    const tableBody = document.getElementById('payment-methods-table-body');
-    const addModal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
-    const editModal = new bootstrap.Modal(document.getElementById('editPaymentModal'));
-    
-    const addForm = document.getElementById('add-payment-form');
-    const saveAddBtn = document.querySelector('#addPaymentModal .btn-primary');
-    
     const saveEditBtn = document.querySelector('#editPaymentModal .btn-primary');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+            headers
         });
-        if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
+
+        if (response.status === 401 || response.status === 403) { 
+            const errorData = await response.json().catch(() => ({ message: 'Phiên đăng nhập đã hết hạn hoặc bạn không có quyền truy cập. Vui lòng đăng nhập lại.' }));
+            throw new Error(errorData.message);
+        }
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Có lỗi xảy ra');
@@ -32,26 +35,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- HÀM MỚI: UPLOAD FILE ---
     async function uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file);
+        const token = localStorage.getItem('accessToken');
+        const formData = new FormData();
+        formData.append('file', file);
 
-    // Khi gửi FormData, trình duyệt sẽ tự động đặt Content-Type là multipart/form-data
-    // nên chúng ta không cần khai báo nó trong headers.
-    const response = await fetch(`${API_BASE_URL}/files/upload/qr`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`
-            // Xóa dòng 'Content-Type': 'application/json'
-        },
-        body: formData,
-    });
+        const response = await fetch(`${API_BASE_URL}/files/upload/qr`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData,
+        });
 
-    if (!response.ok) {
-        throw new Error('Upload file thất bại.');
+        if (!response.ok) {
+            throw new Error('Upload file thất bại.');
+        }
+        const result = await response.json();
+        return result.filePath;
     }
-    const result = await response.json();
-    return result.filePath; // Trả về đường dẫn file trên server
-}
 
 
     // --- HÀM TIỆN ÍCH & RENDER ---
@@ -94,6 +95,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
     async function handleAdd(event) {
         event.preventDefault();
+        const errorAlert = document.getElementById('add-error-message');
+        errorAlert.classList.add('d-none');
+
         const fileInput = document.getElementById('add-method-qr-file');
         let qrCodeImageUrl = '';
 
@@ -115,7 +119,8 @@ document.addEventListener('DOMContentLoaded', function () {
             addForm.reset();
             loadMethods();
         } catch (error) {
-            alert(`Thêm thất bại: ${error.message}`);
+            errorAlert.textContent = `Thêm thất bại: ${error.message}`;
+            errorAlert.classList.remove('d-none');
         }
     }
 
@@ -136,6 +141,9 @@ document.addEventListener('DOMContentLoaded', function () {
     
     async function handleUpdate(event) {
         event.preventDefault();
+        const errorAlert = document.getElementById('edit-error-message');
+        errorAlert.classList.add('d-none');
+
         const methodId = document.getElementById('edit-method-id').value;
         let qrCodeImageUrl = document.getElementById('edit-method-qr-url').value;
         const fileInput = document.getElementById('edit-method-qr-file');
@@ -157,7 +165,8 @@ document.addEventListener('DOMContentLoaded', function () {
             editModal.hide();
             loadMethods();
         } catch (error) {
-            alert(`Cập nhật thất bại: ${error.message}`);
+            errorAlert.textContent = `Cập nhật thất bại: ${error.message}`;
+            errorAlert.classList.remove('d-none');
         }
     }
 

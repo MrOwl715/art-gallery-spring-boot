@@ -3,29 +3,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    // --- BIẾN TRẠNG THÁI & DOM ---
-    let importSlipItems = [];
-    let allArtists = [];
-    let allCategories = [];
-
-    const importSlipContainer = document.getElementById('import-slip-items');
-    const artistSelect = document.getElementById('artist-select');
-    const totalImportValueEl = document.getElementById('total-import-value');
-    const addNewPaintingModal = new bootstrap.Modal(document.getElementById('addNewPaintingModal'));
-    const confirmAddPaintingBtn = document.getElementById('confirm-add-painting-btn');
-    
-    const reviewImportBtn = document.getElementById('review-import-btn');
-    const finalConfirmModal = new bootstrap.Modal(document.getElementById('finalConfirmModal'));
     const finalConfirmAndPrintBtn = document.getElementById('final-confirm-and-print-btn');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+            headers
         });
+
         if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
         if (!response.ok) {
             const errorData = await response.json();
@@ -38,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- HÀM MỚI: TẢI FILE LÊN SERVER ---
     async function uploadFile(file) {
+        const token = localStorage.getItem('accessToken');
         const formData = new FormData();
         formData.append('file', file);
 
@@ -54,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
             throw new Error(errorData.message || 'Upload file thất bại.');
         }
         const result = await response.json();
-        return result.filePath; // Trả về đường dẫn file trên server
+        return result.filePath;
     }
 
     // --- CÁC HÀM RENDER ---

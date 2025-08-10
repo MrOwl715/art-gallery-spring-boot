@@ -3,33 +3,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    // --- BIẾN LƯU TRỮ DỮ LIỆU ---
-    let allPaintings = [];
-    let allArtists = [];
-    let allCategories = [];
-    let currentView = 'grid'; // Biến để theo dõi chế độ xem
-
-    // --- LẤY CÁC PHẦN TỬ DOM ---
-    const displayArea = document.getElementById('painting-display-area');
-    const editPaintingModal = new bootstrap.Modal(document.getElementById('editPaintingModal'));
-    const saveEditBtn = document.querySelector('#editPaintingModal .btn-primary');
-    
-    // DOM cho Tìm kiếm & Lọc
-    const searchInput = document.getElementById('search-input');
-    const statusFilter = document.getElementById('filter-status');
-    const searchBtn = document.getElementById('search-btn');
-    const gridViewBtn = document.getElementById('view-grid-btn');
     const listViewBtn = document.getElementById('view-list-btn');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+            headers
         });
-        if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
+
+        if (response.status === 401 || response.status === 403) {
+            const errorData = await response.json().catch(() => ({ message: 'Phiên đăng nhập đã hết hạn hoặc bạn không có quyền truy cập. Vui lòng đăng nhập lại.' }));
+            throw new Error(errorData.message);
+        }
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Có lỗi xảy ra');
@@ -40,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // --- HÀM TẢI FILE LÊN SERVER ---
     async function uploadFile(file) {
+        const token = localStorage.getItem('accessToken');
         const formData = new FormData();
         formData.append('file', file);
 
@@ -208,38 +204,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function handleUpdatePainting(event) {
         event.preventDefault();
+        const errorAlert = document.getElementById('edit-error-message');
+        errorAlert.classList.add('d-none'); // Ẩn thông báo lỗi cũ
+
         const paintingId = document.getElementById('edit-painting-id').value;
         const imageFileInput = document.getElementById('edit-image-file');
         let imageUrl = document.getElementById('edit-image-url').value.trim();
 
-        if (imageFileInput.files.length > 0) {
-            try {
-                imageUrl = await uploadFile(imageFileInput.files[0]);
-            } catch (error) {
-                alert(`Lỗi tải ảnh lên: ${error.message}`);
-                return;
-            }
-        }
-        
-        const currentPainting = await fetchApi(`/paintings/${paintingId}`);
-        const paintingData = {
-            sellingPrice: document.getElementById('edit-selling-price').value,
-            importPrice: currentPainting.importPrice,
-            name: document.getElementById('edit-name').value,
-            imageUrl: imageUrl,
-            material: document.getElementById('edit-material-input').value,
-            size: document.getElementById('edit-size').value,
-            description: document.getElementById('edit-description').value,
-            status: document.getElementById('edit-status').value,
-            artistId: document.getElementById('edit-artist-select').value,
-            categoryId: document.getElementById('edit-category-select').value,
-        };
+        // ... (phần còn lại của hàm không đổi)
+
         try {
+            if (imageFileInput.files.length > 0) {
+                try {
+                    imageUrl = await uploadFile(imageFileInput.files[0]);
+                } catch (error) {
+                    throw new Error(`Lỗi tải ảnh lên: ${error.message}`);
+                }
+            }
+            
+            const currentPainting = await fetchApi(`/paintings/${paintingId}`);
+            const paintingData = {
+                sellingPrice: document.getElementById('edit-selling-price').value,
+                importPrice: currentPainting.importPrice,
+                name: document.getElementById('edit-name').value,
+                imageUrl: imageUrl,
+                material: document.getElementById('edit-material-input').value,
+                size: document.getElementById('edit-size').value,
+                description: document.getElementById('edit-description').value,
+                status: document.getElementById('edit-status').value,
+                artistId: document.getElementById('edit-artist-select').value,
+                categoryId: document.getElementById('edit-category-select').value,
+            };
+
             await fetchApi(`/paintings/${paintingId}`, { method: 'PUT', body: JSON.stringify(paintingData) });
             editPaintingModal.hide();
             initializePage();
         } catch(error) {
-            alert(`Cập nhật thất bại: ${error.message}`);
+            errorAlert.textContent = `Cập nhật thất bại: ${error.message}`;
+            errorAlert.classList.remove('d-none');
         }
     }
 

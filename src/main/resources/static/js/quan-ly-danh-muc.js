@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
     // --- LẤY CÁC PHẦN TỬ DOM ---
     const genresTableBody = document.getElementById('genres-table-body');
     const genreModal = new bootstrap.Modal(document.getElementById('genreModal'));
@@ -15,16 +13,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                ...options.headers,
-            },
+            headers
         });
+
         if (response.status === 401 || response.status === 403) {
-            window.location.href = '/dang-nhap.html';
+            const errorData = await response.json().catch(() => ({ message: 'Phiên đăng nhập đã hết hạn hoặc bạn không có quyền truy cập. Vui lòng đăng nhập lại.' }));
+            throw new Error(errorData.message);
         }
         if (!response.ok) {
             const errorData = await response.json();
@@ -95,11 +100,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function handleSave() {
+        const errorAlert = document.getElementById('modal-error-message');
+        errorAlert.classList.add('d-none');
+
         const categoryId = document.getElementById('genre-id').value;
         const categoryData = {
             name: document.getElementById('genre-name').value,
             description: document.getElementById('genre-description').value,
-            // DÒNG NÀY GIỜ SẼ HOẠT ĐỘNG ĐÚNG
             status: document.getElementById('genre-status').value === 'true'
         };
 
@@ -113,9 +120,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify(categoryData)
             });
             genreModal.hide();
-            loadCategories(); // Tải lại danh sách sau khi lưu
+            loadCategories();
         } catch (error) {
-            alert(`Lưu thất bại: ${error.message}`);
+            errorAlert.textContent = `Lưu thất bại: ${error.message}`;
+            errorAlert.classList.remove('d-none');
         }
     }
     

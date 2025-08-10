@@ -136,8 +136,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Thêm Khách hàng mới</h5><button type="button" class="btn-close"
-                        data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title">Thêm Khách hàng mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="add-customer-form">
@@ -157,10 +157,11 @@
                             <label for="add-customer-address" class="form-label">Địa chỉ</label>
                             <textarea id="add-customer-address" class="form-control" rows="2"></textarea>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary">Lưu</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer"><button type="button" class="btn btn-light"
-                        data-bs-dismiss="modal">Hủy</button><button type="button" class="btn btn-primary">Lưu</button>
                 </div>
             </div>
         </div>
@@ -170,29 +171,41 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Chỉnh sửa thông tin</h5><button type="button" class="btn-close"
-                        data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title">Chỉnh sửa thông tin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form><input type="hidden" id="edit-customer-id">
-                        <div class="mb-3"><label class="form-label">Họ và Tên</label><input type="text"
-                                id="edit-customer-name" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">Số điện thoại</label><input type="tel"
-                                id="edit-customer-phone" class="form-control"></div>
-                        <div class="mb-3"><label class="form-label">Email</label><input type="email"
-                                id="edit-customer-email" class="form-control"></div>
-                        <div class="mb-3"><label class="form-label">Địa chỉ</label><textarea class="form-control"
-                                id="edit-customer-address" rows="2"></textarea></div>
-                        <div class="mb-3"><label class="form-label">Trạng thái</label><select class="form-select"
-                                id="edit-customer-status">
-                                <option value="Hoạt động">Hoạt động</option>
-                                <option value="Dừng hoạt động">Dừng hoạt động</option>
-                            </select></div>
+                    <form id="edit-customer-form">
+                        <input type="hidden" id="edit-customer-id">
+                        <div class="mb-3">
+                            <label class="form-label">Họ và Tên</label>
+                            <input type="text" id="edit-customer-name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="tel" id="edit-customer-phone" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="edit-customer-email" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Địa chỉ</label>
+                            <textarea class="form-control" id="edit-customer-address" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Trạng thái</label>
+                            <select class="form-select" id="edit-customer-status">
+                                <option value="true">Hoạt động</option>
+                                <option value="false">Tạm ẩn</option>
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                        </div>
                     </form>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-light"
-                        data-bs-dismiss="modal">Hủy</button><button type="button" class="btn btn-primary">Lưu thay
-                        đổi</button></div>
             </div>
         </div>
     </div>
@@ -202,8 +215,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Lịch sử mua hàng: <span id="history-customer-name"
-                            class="text-primary"></span></h5><button type="button" class="btn-close"
-                        data-bs-dismiss="modal" aria-label="Close"></button>
+                            class="text-primary"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
@@ -219,8 +232,21 @@
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-light"
-                        data-bs-dismiss="modal">Đóng</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
+            aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
             </div>
         </div>
     </div>

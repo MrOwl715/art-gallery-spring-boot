@@ -3,20 +3,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    let allImportSlips = [];
-
-    // --- LẤY CÁC PHẦN TỬ DOM ---
-    const importsTableBody = document.getElementById('imports-table-body');
     const importDetailModal = new bootstrap.Modal(document.getElementById('importDetailModal'));
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
+            headers
         });
+
         if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
         if (!response.ok) {
             const errorData = await response.json();

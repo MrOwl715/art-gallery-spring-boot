@@ -73,32 +73,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- LẤY API VÀ TOKEN ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    // --- Lấy các phần tử DOM ---
-    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-    const mainContainer = document.querySelector('.main-container');
-    const infoForm = document.getElementById('info-form');
     const passwordForm = document.getElementById('password-form');
 
     // --- Hàm gọi API chung ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                ...options.headers,
-            },
+            headers
         });
+
         if (!response.ok) {
-            // Nếu token hết hạn hoặc không hợp lệ, server sẽ trả về lỗi 401 hoặc 403
             if (response.status === 401 || response.status === 403) {
-                window.location.href = '/dang-nhap.html'; // Chuyển về trang đăng nhập
+                window.location.href = '/dang-nhap.html';
             }
-            throw new Error('Lỗi mạng hoặc server.');
+            const errorData = await response.json().catch(() => ({ message: 'Lỗi mạng hoặc server.' }));
+            throw new Error(errorData.message);
         }
-        return response.json();
+        // Handle cases where response might be empty
+        const responseText = await response.text();
+        return responseText ? JSON.parse(responseText) : {};
     }
 
     // --- Hàm điền dữ liệu vào giao diện ---
@@ -179,26 +181,17 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            // Gọi API đổi mật khẩu
-            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+            await fetchApi('/auth/change-password', {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
                 body: JSON.stringify(passwordData)
             });
 
-            if (response.ok) {
-                alert('Đổi mật khẩu thành công!');
-                passwordForm.reset(); // Xóa các ô input
-            } else {
-                const errorData = await response.json();
-                alert(`Lỗi: ${errorData.message}`);
-            }
+            alert('Đổi mật khẩu thành công!');
+            passwordForm.reset();
+
         } catch (error) {
             console.error('Lỗi đổi mật khẩu:', error);
-            alert('Đổi mật khẩu thất bại. Vui lòng thử lại.');
+            alert(`Lỗi: ${error.message}`);
         }
     });
 

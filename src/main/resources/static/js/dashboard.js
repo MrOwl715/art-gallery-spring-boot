@@ -3,18 +3,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
-    const token = localStorage.getItem('accessToken');
-
-    // --- BIẾN VÀ LẤY PHẦN TỬ DOM ---
-    let salesChart, proportionChart;
-
-    const salesChartFilter = document.getElementById('sales-chart-filter');
-    const reportTypeSelect = document.getElementById('report-type');
-    const downloadReportBtn = document.getElementById('download-report-btn');
     const activityLogList = document.getElementById('activity-log-list');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
+        const token = localStorage.getItem('accessToken');
         if (!token) { window.location.href = '/dang-nhap.html'; return; }
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,

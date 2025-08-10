@@ -29,23 +29,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Có lỗi xảy ra');
+            throw errorData; // Ném toàn bộ object lỗi để xử lý chi tiết hơn
         }
         if (response.status === 204) return null;
         return response.json();
     }
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-    // --- HÀM MỚI: TẢI FILE LÊN SERVER ---
     async function uploadFile(file) {
         const formData = new FormData();
         formData.append('file', file);
 
         const response = await fetch(`${API_BASE_URL}/files/upload/painting`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Authorization': `Bearer ${token}` },
             body: formData,
         });
 
@@ -54,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
             throw new Error(errorData.message || 'Upload file thất bại.');
         }
         const result = await response.json();
-        return result.filePath; // Trả về đường dẫn file trên server
+        return result.filePath;
     }
 
     // --- CÁC HÀM RENDER ---
@@ -90,24 +87,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     function updateTotalValue() {
-        const total = importSlipItems.reduce((sum, item) => sum + (item.importPrice * 1), 0); // Mỗi sản phẩm nhập số lượng là 1
+        const total = importSlipItems.reduce((sum, item) => sum + (item.importPrice * 1), 0);
         totalImportValueEl.textContent = formatCurrency(total);
     }
 
-    // --- CÁC HÀM XỬ LÝ ---
+    // HÀM NÀY ĐÃ ĐƯỢC CẬP NHẬT HOÀN TOÀN
     async function handleAddItemToSlip() {
+        const errorMessageDiv = document.getElementById('add-painting-error-message');
+        errorMessageDiv.classList.add('d-none');
+        errorMessageDiv.innerHTML = '';
+
         const addPaintingForm = document.getElementById('add-painting-form');
         const imageFileInput = document.getElementById('add-image-file');
         let imageUrl = document.getElementById('add-image-url').value.trim();
 
-        // Ưu tiên ảnh upload
-        if (imageFileInput.files.length > 0) {
-            try {
+        // Xử lý upload ảnh (nếu có)
+        try {
+            if (imageFileInput.files.length > 0) {
                 imageUrl = await uploadFile(imageFileInput.files[0]);
-            } catch (error) {
-                alert(`Lỗi tải ảnh lên: ${error.message}`);
-                return;
             }
+        } catch (error) {
+            errorMessageDiv.textContent = `Lỗi tải ảnh lên: ${error.message}`;
+            errorMessageDiv.classList.remove('d-none');
+            return;
         }
         
         const newItem = {
@@ -117,24 +119,29 @@ document.addEventListener('DOMContentLoaded', function () {
             description: document.getElementById('add-description').value,
             material: document.getElementById('add-material').value,
             size: document.getElementById('add-size').value,
-            imageUrl: imageUrl, // Sử dụng URL sau khi đã upload
+            imageUrl: imageUrl,
             categoryId: document.getElementById('add-category-select').value,
         };
 
+        // Kiểm tra validation cơ bản phía client
         if (!newItem.name || !newItem.categoryId || isNaN(newItem.importPrice) || isNaN(newItem.sellingPrice)) {
-            alert('Vui lòng điền đầy đủ Tên tranh, Giá nhập, Giá bán và chọn Thể loại.');
+            errorMessageDiv.textContent = 'Vui lòng điền đầy đủ Tên tranh, Giá nhập, Giá bán và chọn Thể loại.';
+            errorMessageDiv.classList.remove('d-none');
             return;
         }
 
         if (newItem.sellingPrice <= newItem.importPrice) {
-            alert('Giá bán phải cao hơn giá nhập.');
+            errorMessageDiv.textContent = 'Giá bán phải cao hơn giá nhập.';
+            errorMessageDiv.classList.remove('d-none');
             return;
         }
 
+        // Nếu mọi thứ ổn, thêm vào danh sách và render lại
         importSlipItems.push(newItem);
         renderImportSlip();
         addNewPaintingModal.hide();
         addPaintingForm.reset();
+        errorMessageDiv.classList.add('d-none'); // Ẩn lỗi khi thành công
     }
 
     function handleReviewImport() {
@@ -165,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return true;
     }
 
+    // HÀM NÀY ĐÃ ĐƯỢC CẬP NHẬT ĐỂ XỬ LÝ LỖI VALIDATION
     async function handleFinalConfirm() {
         const requestData = {
             artistId: artistSelect.value,
@@ -180,7 +188,31 @@ document.addEventListener('DOMContentLoaded', function () {
             finalConfirmModal.hide();
             window.location.href = '/quan-ly-nhap-hang.html';
         } catch (error) {
-            alert(`Lỗi tạo phiếu nhập: ${error.message}`);
+            // Xử lý lỗi validation từ server
+            let errorMessage = "Đã có lỗi xảy ra. ";
+            if (error.message) {
+                 errorMessage = error.message;
+            }
+             // Nếu có lỗi chi tiết cho từng tranh, chúng ta có thể hiển thị chúng
+            if (error.errors) {
+                let errorDetails = '';
+                for (const key in error.errors) {
+                     // key sẽ có dạng 'newPaintings[0].sellingPrice'
+                    const match = key.match(/newPaintings\[(\d+)]\.(.+)/);
+                    if (match) {
+                        const itemIndex = parseInt(match[1], 10);
+                        const fieldName = match[2];
+                        const paintingName = importSlipItems[itemIndex].name;
+                        errorDetails += `<li>Lỗi ở tranh "${paintingName}": ${error.errors[key]}</li>`;
+                    }
+                }
+                 if (errorDetails) {
+                    errorMessage += `<ul>${errorDetails}</ul>`;
+                }
+            }
+            // Hiển thị lỗi trong modal xác nhận
+            const summaryDiv = document.getElementById('final-confirm-summary');
+            summaryDiv.insertAdjacentHTML('afterbegin', `<div class="alert alert-danger">${errorMessage}</div>`);
         }
     }
 
@@ -206,6 +238,12 @@ document.addEventListener('DOMContentLoaded', function () {
     confirmAddPaintingBtn.addEventListener('click', handleAddItemToSlip);
     
     reviewImportBtn.addEventListener('click', () => {
+        // Xóa lỗi cũ trước khi mở lại modal
+        const existingError = document.querySelector('#final-confirm-summary .alert');
+        if (existingError) {
+            existingError.remove();
+        }
+
         if(handleReviewImport()) {
             finalConfirmModal.show();
         }

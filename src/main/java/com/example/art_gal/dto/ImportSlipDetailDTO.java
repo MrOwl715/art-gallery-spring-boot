@@ -1,7 +1,8 @@
 package com.example.art_gal.dto;
 
-import lombok.Data;
 import java.math.BigDecimal;
+
+import lombok.Data;
 
 @Data
 public class ImportSlipDetailDTO {

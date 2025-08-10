@@ -3,24 +3,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- CẤU HÌNH API ---
     const API_BASE_URL = '/api';
+    const token = localStorage.getItem('accessToken');
+
+    // --- BIẾN LƯU TRỮ ---
+    let allExportOrders = [];
+    let allArtists = [];
+    let allCategories = [];
+
+    // --- LẤY CÁC PHẦN TỬ DOM ---
+    const ordersTableBody = document.getElementById('orders-table-body');
+    const orderDetailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+    const saveStatusBtn = document.getElementById('save-status-btn');
+    
+    // --- DOM CHO TÌM KIẾM ---
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const dateFilter = document.getElementById('date-filter');
+    const artistFilter = document.getElementById('artist-filter');
+    const categoryFilter = document.getElementById('category-filter');
     const searchBtn = document.getElementById('search-btn');
     
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
-        const token = localStorage.getItem('accessToken');
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers },
         });
-
         if (response.status === 401 || response.status === 403) { window.location.href = '/dang-nhap.html'; }
         if (!response.ok) {
             const errorData = await response.json();
@@ -42,6 +50,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const statusInfo = statusMap[status] || { class: 'bg-secondary', text: 'Không xác định' };
         return `<span class="badge ${statusInfo.class}">${statusInfo.text}</span>`;
     };
+
+    // --- HÀM TẢI DỮ LIỆU BỔ SUNG ---
+    async function loadArtists() {
+        try {
+            allArtists = await fetchApi('/artists');
+            populateArtistFilter();
+        } catch (error) {
+            console.error('Lỗi tải danh sách họa sĩ:', error);
+        }
+    }
+
+    async function loadCategories() {
+        try {
+            allCategories = await fetchApi('/categories');
+            populateCategoryFilter();
+        } catch (error) {
+            console.error('Lỗi tải danh sách danh mục:', error);
+        }
+    }
+
+    function populateArtistFilter() {
+        if (!artistFilter) return;
+        
+        artistFilter.innerHTML = '<option value="ALL">Tất cả họa sĩ</option>';
+        allArtists.forEach(artist => {
+            const option = document.createElement('option');
+            option.value = artist.id;
+            option.textContent = artist.name;
+            artistFilter.appendChild(option);
+        });
+    }
+
+    function populateCategoryFilter() {
+        if (!categoryFilter) return;
+        
+        categoryFilter.innerHTML = '<option value="ALL">Tất cả thể loại</option>';
+        allCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categoryFilter.appendChild(option);
+        });
+    }
 
     // --- HÀM RENDER ---
     function renderOrders(orders) {
@@ -75,6 +126,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchTerm = searchInput.value.toLowerCase().trim();
         const statusValue = statusFilter.value;
         const dateValue = dateFilter.value;
+        const artistValue = artistFilter ? artistFilter.value : 'ALL';
+        const categoryValue = categoryFilter ? categoryFilter.value : 'ALL';
 
         let filteredOrders = allExportOrders;
 
@@ -88,6 +141,24 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredOrders = filteredOrders.filter(order => {
                 const orderDate = new Date(order.orderDate).toLocaleDateString('en-CA'); // Format YYYY-MM-DD
                 return orderDate === dateValue;
+            });
+        }
+
+        // Lọc theo họa sĩ (nếu có)
+        if (artistValue !== 'ALL' && artistFilter) {
+            filteredOrders = filteredOrders.filter(order => {
+                return order.orderDetails && order.orderDetails.some(detail => 
+                    detail.painting && detail.painting.artist && detail.painting.artist.id == artistValue
+                );
+            });
+        }
+
+        // Lọc theo thể loại (nếu có)
+        if (categoryValue !== 'ALL' && categoryFilter) {
+            filteredOrders = filteredOrders.filter(order => {
+                return order.orderDetails && order.orderDetails.some(detail => 
+                    detail.painting && detail.painting.category && detail.painting.category.id == categoryValue
+                );
             });
         }
 
@@ -161,7 +232,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     statusFilter.addEventListener('change', filterAndRenderOrders);
     dateFilter.addEventListener('change', filterAndRenderOrders);
+    
+    // Gắn sự kiện cho các bộ lọc mới
+    if (artistFilter) {
+        artistFilter.addEventListener('change', filterAndRenderOrders);
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', filterAndRenderOrders);
+    }
 
     // --- KHỞI CHẠY ---
     loadOrders();
+    loadArtists();
+    loadCategories();
 });

@@ -18,7 +18,7 @@
 
     <header class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
     <div class="container-fluid">
-        <button class="btn btn-light me-2" type="button" id="sidebar-toggle-btn">
+        <button class="btn btn-light me-2" type="button" id="sidebar-toggle-btn" title="Toggle sidebar">
             <i class="bi bi-list fs-5"></i>
         </button>
         <a class="navbar-brand fw-bold text-primary" href="index.html">ArtGallery POS</a>
@@ -88,21 +88,31 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <div class="row g-3 align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <input type="text" id="search-input" class="form-control" placeholder="Tìm theo Mã ĐH, Tên khách hàng...">
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="status-filter">
+                        <div class="col-md-2">
+                            <select class="form-select" id="status-filter" title="Lọc theo trạng thái">
                                 <option value="ALL" selected>Tất cả trạng thái</option>
                                 <option value="COMPLETED">Hoàn thành</option>
                                 <option value="PENDING">Chờ xử lý</option>
                                 <option value="CANCELLED">Đã hủy</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <input type="date" id="date-filter" class="form-control">
+                        <div class="col-md-2">
+                            <select class="form-select" id="artist-filter" title="Lọc theo họa sĩ">
+                                <option value="ALL">Tất cả họa sĩ</option>
+                            </select>
                         </div>
                         <div class="col-md-2">
+                            <select class="form-select" id="category-filter" title="Lọc theo thể loại">
+                                <option value="ALL">Tất cả thể loại</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" id="date-filter" class="form-control" title="Lọc theo ngày">
+                        </div>
+                        <div class="col-md-1">
                             <button class="btn btn-primary w-100" id="search-btn">Tìm kiếm</button>
                         </div>
                     </div>

@@ -15,18 +15,16 @@
 <body class="preload">
 
     <header class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
-    <div class="container-fluid">
-        <button class="btn btn-light me-2" type="button" id="sidebar-toggle-btn">
-            <i class="bi bi-list fs-5"></i>
-        </button>
-        <a class="navbar-brand fw-bold text-primary" href="index.html">ArtGallery POS</a>
-        
-        <div class="ms-auto d-flex align-items-center">
-           <div class="dropdown">
-                    <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" width="38" height="38"
-                            class="rounded-circle">
+        <div class="container-fluid">
+            <button class="btn btn-light me-2" type="button" id="sidebar-toggle-btn">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+            <a class="navbar-brand fw-bold text-primary" href="index.html">ArtGallery POS</a>
+            
+            <div class="ms-auto d-flex align-items-center">
+                <div class="dropdown">
+                    <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="https://i.pravatar.cc/150?u=admin" alt="avatar" width="38" height="38" class="rounded-circle">
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end text-small shadow-sm">
                         <li>
@@ -35,41 +33,25 @@
                                 <div class="small text-muted" id="user-role-header"></div>
                             </h6>
                         </li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="thong-tin-ca-nhan.html">
-                                <i class="bi bi-person me-2"></i>Thông tin cá nhân
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#">
-                                <i class="bi bi-gear me-2"></i>Cài đặt
-                            </a>
-                        </li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center text-danger" href="#" id="logout-btn">
-                                <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
-                            </a>
-                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item d-flex align-items-center" href="thong-tin-ca-nhan.html"><i class="bi bi-person me-2"></i>Thông tin cá nhân</a></li>
+                        <li><a class="dropdown-item d-flex align-items-center" href="#"><i class="bi bi-gear me-2"></i>Cài đặt</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item d-flex align-items-center text-danger" href="#" id="logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
                     </ul>
                 </div>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <div class="main-container d-flex">
         <nav class="main-sidebar d-flex flex-column p-3" id="main-sidebar">
             <ul class="nav nav-pills flex-column mb-auto">
-                <li><a href="index.html" class="nav-link text-dark"><i class="bi bi-house-door me-2"></i> Tổng quan</a></li>
+                <li id="menu-dashboard"><a href="index.html" class="nav-link text-dark"><i class="bi bi-house-door me-2"></i> Tổng quan</a></li>
                 <li><a href="ban-hang.html" class="nav-link text-dark"><i class="bi bi-cart4 me-2"></i> Bán hàng</a></li>
                 <li class="nav-item mt-3"><h6 class="text-muted small text-uppercase">Quản lý</h6></li>
                 <li><a href="quan-ly-don-hang.html" class="nav-link text-dark"><i class="bi bi-box-seam me-2"></i> Đơn hàng</a></li>
-                <li><a href="quan-ly-nhap-hang.html" class="nav-link active" aria-current="page"><i class="bi bi-box-arrow-in-down me-2"></i> Nhập hàng</a></li>
+                <li><a href="quan-ly-nhap-hang.html" class="nav-link active"><i class="bi bi-box-arrow-in-down me-2"></i> Nhập hàng</a></li>
                 <li><a href="quan-ly-tranh.html" class="nav-link text-dark"><i class="bi bi-palette me-2"></i> Tranh</a></li>
                 <li><a href="quan-ly-hoa-si.html" class="nav-link text-dark"><i class="bi bi-brush me-2"></i> Họa sĩ</a></li>
                 <li><a href="quan-ly-danh-muc.html" class="nav-link text-dark"><i class="bi bi-tags me-2"></i> Danh mục</a></li>
@@ -110,7 +92,7 @@
                 </div>
                 <div class="card-body">
                     <div id="import-slip-items" class="table-responsive">
-                         </div>
+                    </div>
                 </div>
                 <div class="card-footer bg-white d-flex justify-content-end align-items-center">
                     <span class="me-3">Tổng giá trị nhập:</span>
@@ -130,25 +112,26 @@
             <div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">Thêm Sản phẩm mới vào Phiếu nhập</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-    <form id="add-painting-form" class="row g-3">
-        <div class="col-12"><label for="add-name" class="form-label">Tên tranh</label><input type="text" id="add-name" class="form-control" required></div>
-        <div class="col-md-6"><label for="add-import-price" class="form-label">Giá nhập (VND)</label><input type="number" id="add-import-price" class="form-control" required></div>
-        <div class="col-md-6"><label for="add-selling-price" class="form-label">Giá bán (VND)</label><input type="number" id="add-selling-price" class="form-control" required></div>
-        <div class="col-md-6"><label for="add-category-select" class="form-label">Thể loại</label><select class="form-select" id="add-category-select" required></select></div>
-        <div class="col-md-6"><label for="add-material" class="form-label">Chất liệu</label><input type="text" id="add-material" class="form-control"></div>
-        <div class="col-md-6"><label for="add-size" class="form-label">Kích thước</label><input type="text" id="add-size" class="form-control"></div>
-        
-        <div class="col-md-6">
-            <label for="add-image-url" class="form-label">URL Hình ảnh (tùy chọn)</label>
-            <input type="text" id="add-image-url" class="form-control">
-        </div>
-        <div class="col-md-6">
-            <label for="add-image-file" class="form-label">Hoặc tải ảnh lên</label>
-            <input type="file" id="add-image-file" class="form-control" accept="image/*">
-        </div>
-        <div class="col-12"><label for="add-description" class="form-label">Mô tả</label><textarea id="add-description" class="form-control" rows="2"></textarea></div>
-    </form>
-</div>
+                    <div id="add-painting-error-message" class="alert alert-danger d-none" role="alert"></div>
+                    <form id="add-painting-form" class="row g-3">
+                        <div class="col-12"><label for="add-name" class="form-label">Tên tranh</label><input type="text" id="add-name" class="form-control" required></div>
+                        <div class="col-md-6"><label for="add-import-price" class="form-label">Giá nhập (VND)</label><input type="number" id="add-import-price" class="form-control" required></div>
+                        <div class="col-md-6"><label for="add-selling-price" class="form-label">Giá bán (VND)</label><input type="number" id="add-selling-price" class="form-control" required></div>
+                        <div class="col-md-6"><label for="add-category-select" class="form-label">Thể loại</label><select class="form-select" id="add-category-select" required></select></div>
+                        <div class="col-md-6"><label for="add-material" class="form-label">Chất liệu</label><input type="text" id="add-material" class="form-control"></div>
+                        <div class="col-md-6"><label for="add-size" class="form-label">Kích thước</label><input type="text" id="add-size" class="form-control"></div>
+                        
+                        <div class="col-md-6">
+                            <label for="add-image-url" class="form-label">URL Hình ảnh (tùy chọn)</label>
+                            <input type="text" id="add-image-url" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="add-image-file" class="form-label">Hoặc tải ảnh lên</label>
+                            <input type="file" id="add-image-file" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-12"><label for="add-description" class="form-label">Mô tả</label><textarea id="add-description" class="form-control" rows="2"></textarea></div>
+                    </form>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
                     <button type="button" class="btn btn-primary" id="confirm-add-painting-btn">Thêm vào phiếu</button>

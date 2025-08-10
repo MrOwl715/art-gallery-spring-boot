@@ -9,8 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let allCategories = [];
     let allCustomers = [];
     let allPaymentMethods = [];
+    let allArtists = []; // Thêm biến chứa danh sách họa sĩ
     let cart = [];
-    const TAX_RATE = 0.08; // <<< THAY ĐỔI Ở ĐÂY: TỪ 0 SANG 0.08
+    const TAX_RATE = 0.08;
     let currentTotal = 0;
 
     // --- LẤY CÁC PHẦN TỬ DOM ---
@@ -26,13 +27,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
     const addCustomerModal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
     const saveCustomerBtn = document.getElementById('save-customer-btn');
-
-    // DOM CHO SIDEBAR VÀ THANH TOÁN TIỀN MẶT ---
     const cashReceivedInput = document.getElementById('cash-received');
     const cashChangeEl = document.getElementById('cash-change');
     const cashPaymentFields = document.getElementById('cash-payment-fields');
     const qrPaymentFields = document.getElementById('qr-payment-fields');
     const qrCodeImage = document.getElementById('qr-code-image');
+    
+    // DOM cho Lọc Nâng cao
+    const filterModal = new bootstrap.Modal(document.getElementById('filterModal'));
+    const applyFiltersBtn = document.getElementById('apply-filters-btn');
+    const resetFiltersBtn = document.getElementById('reset-filters-btn');
+    const priceRangeSlider = document.getElementById('filter-price-range');
+    const priceRangeValue = document.getElementById('price-range-value');
 
     // --- HÀM GỌI API CHUNG ---
     async function fetchApi(endpoint, options = {}) {
@@ -70,11 +76,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="card-text text-muted small">SL: ${product.quantity}</p>
                         <div class="mt-auto d-flex justify-content-between align-items-center">
                             <span class="price">${formatCurrency(product.sellingPrice)}</span>
-                            
-                        </div>
-                        <button class="btn btn-primary btn-sm add-to-cart-btn btn-icon" data-id="${product.id}" title="Thêm vào giỏ hàng" ${product.quantity === 0 ? 'disabled' : ''}>
+                            <button class="btn btn-primary btn-sm add-to-cart-btn btn-icon" data-id="${product.id}" title="Thêm vào giỏ hàng" ${product.quantity === 0 ? 'disabled' : ''}>
                                 <i class="bi bi-cart-plus"></i>
                             </button>
+                        </div>
                     </div>
                 </div>`;
             productGrid.appendChild(card);
@@ -237,85 +242,122 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function handleConfirmPayment() {
-    if (cart.length === 0) { alert('Giỏ hàng trống!'); return; }
-    const selectedCustomer = customerSelect.value;
-    if (!selectedCustomer) { alert('Vui lòng chọn khách hàng.'); return; }
-    const selectedPaymentMethodCard = paymentMethodOptions.querySelector('.active');
-    if (!selectedPaymentMethodCard) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
-    
-    const methodId = selectedPaymentMethodCard.dataset.id;
-    const method = allPaymentMethods.find(m => m.id == methodId);
+        if (cart.length === 0) { alert('Giỏ hàng trống!'); return; }
+        const selectedCustomer = customerSelect.value;
+        if (!selectedCustomer) { alert('Vui lòng chọn khách hàng.'); return; }
+        const selectedPaymentMethodCard = paymentMethodOptions.querySelector('.active');
+        if (!selectedPaymentMethodCard) { alert('Vui lòng chọn phương thức thanh toán.'); return; }
+        
+        const methodId = selectedPaymentMethodCard.dataset.id;
+        const method = allPaymentMethods.find(m => m.id == methodId);
 
-    if (method && method.method.toLowerCase().includes('tiền mặt')) {
-        const cashReceived = parseFloat(cashReceivedInput.value);
-        if (isNaN(cashReceived) || cashReceived < currentTotal) {
-            alert('Số tiền khách đưa không đủ hoặc không hợp lệ.');
-            return;
+        if (method && method.method.toLowerCase().includes('tiền mặt')) {
+            const cashReceived = parseFloat(cashReceivedInput.value);
+            if (isNaN(cashReceived) || cashReceived < currentTotal) {
+                alert('Số tiền khách đưa không đủ hoặc không hợp lệ.');
+                return;
+            }
+        }
+
+        const orderData = {
+            customerId: selectedCustomer,
+            paymentMethodId: methodId,
+            orderDetails: cart.map(item => ({ paintingId: item.id, quantity: item.quantity }))
+        };
+        
+        try {
+            const createdOrder = await fetchApi('/export-orders', {
+                method: 'POST',
+                body: JSON.stringify(orderData)
+            });
+
+            alert('Tạo đơn hàng thành công!');
+            
+            const subtotal = createdOrder.orderDetails.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * TAX_RATE;
+
+            const dataForPrint = {
+                id: createdOrder.id,
+                date: new Date(createdOrder.orderDate).toLocaleString('vi-VN'),
+                items: createdOrder.orderDetails.map(detail => ({
+                    name: detail.paintingName,
+                    quantity: detail.quantity,
+                    price: detail.price
+                })),
+                subtotal: subtotal,
+                tax: tax,
+                total: createdOrder.totalAmount
+            };
+
+            localStorage.setItem('currentOrderForPrint', JSON.stringify(dataForPrint));
+            window.open('hoa-don.html', '_blank', 'width=350,height=600');
+
+            paymentModal.hide();
+            cart = [];
+            renderCart();
+            loadInitialData();
+
+        } catch (error) {
+            alert(`Lỗi tạo đơn hàng: ${error.message}`);
         }
     }
-
-    const orderData = {
-        customerId: selectedCustomer,
-        paymentMethodId: methodId,
-        orderDetails: cart.map(item => ({ paintingId: item.id, quantity: item.quantity }))
-    };
     
-    try {
-        const createdOrder = await fetchApi('/export-orders', {
-            method: 'POST',
-            body: JSON.stringify(orderData)
-        });
+    // --- HÀM LỌC TỔNG HỢP MỚI ---
+    function applyAllFilters() {
+        const activeCategoryLink = genreFilters.querySelector('.nav-link.active');
+        const categoryId = activeCategoryLink ? activeCategoryLink.dataset.categoryId : 'all';
 
-        alert('Tạo đơn hàng thành công!');
+        const artistName = document.getElementById('filter-artist-input').value.toLowerCase().trim();
+        const material = document.getElementById('filter-material').value;
+        const maxPrice = parseFloat(priceRangeSlider.value);
+
+        let filteredPaintings = allPaintings.filter(p => p.status === 'FOR_SALE' && p.quantity > 0);
+
+        if (categoryId !== 'all') {
+            filteredPaintings = filteredPaintings.filter(p => p.categoryId == categoryId);
+        }
+
+        if (artistName) {
+            filteredPaintings = filteredPaintings.filter(p => {
+                const artist = allArtists.find(a => a.id === p.artistId);
+                return artist && artist.name.toLowerCase().includes(artistName);
+            });
+        }
         
-        // ---- BẮT ĐẦU SỬA LỖI TÍNH TOÁN HÓA ĐƠN ----
-        // 1. Tính Tạm tính (subtotal) từ chi tiết đơn hàng
-        const subtotal = createdOrder.orderDetails.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        // 2. Tính Thuế từ Tạm tính
-        const tax = subtotal * TAX_RATE;
+        if (material) {
+            filteredPaintings = filteredPaintings.filter(p => p.material === material);
+        }
 
-        const dataForPrint = {
-            id: createdOrder.id,
-            date: new Date(createdOrder.orderDate).toLocaleString('vi-VN'),
-            items: createdOrder.orderDetails.map(detail => ({
-                name: detail.paintingName,
-                quantity: detail.quantity,
-                price: detail.price
-            })),
-            subtotal: subtotal, // Dùng Tạm tính vừa tính
-            tax: tax,           // Dùng Thuế vừa tính
-            total: createdOrder.totalAmount // Lấy tổng cuối cùng từ server
-        };
-        // ---- KẾT THÚC SỬA LỖI ----
+        filteredPaintings = filteredPaintings.filter(p => p.sellingPrice <= maxPrice);
 
-        localStorage.setItem('currentOrderForPrint', JSON.stringify(dataForPrint));
-        window.open('hoa-don.html', '_blank', 'width=350,height=600');
-
-        paymentModal.hide();
-        cart = [];
-        renderCart();
-        loadInitialData();
-
-    } catch (error) {
-        alert(`Lỗi tạo đơn hàng: ${error.message}`);
+        renderPaintings(filteredPaintings);
     }
-}
     
     // --- KHỞI CHẠY & GẮN SỰ KIỆN ---
     async function loadInitialData() {
         try {
-            [allPaintings, allCategories, allCustomers, allPaymentMethods] = await Promise.all([
+            [allPaintings, allCategories, allCustomers, allPaymentMethods, allArtists] = await Promise.all([
                 fetchApi('/paintings'),
                 fetchApi('/categories'),
                 fetchApi('/customers'),
-                fetchApi('/payment-methods')
+                fetchApi('/payment-methods'),
+                fetchApi('/artists')
             ]);
             
-            renderPaintings(allPaintings.filter(p => p.status === 'FOR_SALE' && p.quantity > 0));
+            applyAllFilters();
             renderCategoryFilters(allCategories);
             renderCustomerDropdown(allCustomers);
             renderPaymentMethods(allPaymentMethods);
+
+            const artistDatalist = document.getElementById('artist-datalist');
+            artistDatalist.innerHTML = allArtists.map(a => `<option value="${a.name}"></option>`).join('');
+            
+            const materialSelect = document.getElementById('filter-material');
+            const uniqueMaterials = [...new Set(allPaintings.map(p => p.material).filter(Boolean))];
+            materialSelect.innerHTML = '<option value="">Tất cả chất liệu</option>' + uniqueMaterials.map(m => `<option value="${m}">${m}</option>`).join('');
+
+            priceRangeSlider.value = priceRangeSlider.max;
+            priceRangeValue.textContent = formatCurrency(priceRangeSlider.max);
 
             handlePaymentMethodChange(paymentMethodOptions.querySelector('.payment-method-card'));
 
@@ -340,22 +382,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (target) {
             genreFilters.querySelector('.active').classList.remove('active');
             target.classList.add('active');
-            const categoryId = target.dataset.categoryId;
-            const filteredPaintings = categoryId === 'all' 
-                ? allPaintings.filter(p => p.status === 'FOR_SALE' && p.quantity > 0)
-                : allPaintings.filter(p => p.categoryId == categoryId && p.status === 'FOR_SALE' && p.quantity > 0);
-            renderPaintings(filteredPaintings);
+            applyAllFilters();
         }
     });
-
     paymentMethodOptions.addEventListener('click', (e) => {
         const selectedCard = e.target.closest('.payment-method-card');
         handlePaymentMethodChange(selectedCard);
     });
-
     cashReceivedInput.addEventListener('input', calculateChange);
     confirmPaymentBtn.addEventListener('click', handleConfirmPayment);
     saveCustomerBtn.addEventListener('click', handleSaveNewCustomer);
+    
+    // Gắn sự kiện cho Lọc nâng cao
+    priceRangeSlider.addEventListener('input', () => {
+        priceRangeValue.textContent = formatCurrency(priceRangeSlider.value);
+    });
+    applyFiltersBtn.addEventListener('click', applyAllFilters);
+    resetFiltersBtn.addEventListener('click', () => {
+        document.getElementById('filter-form').reset();
+        priceRangeSlider.value = priceRangeSlider.max;
+        priceRangeValue.textContent = formatCurrency(priceRangeSlider.max);
+        applyAllFilters();
+        filterModal.hide();
+    });
     
     // --- KHỞI CHẠY ---
     loadInitialData();
